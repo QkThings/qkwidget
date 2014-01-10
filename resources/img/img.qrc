@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/img">
+        <file>comm_text.png</file>
+        <file>comm_text_color.png</file>
+        <file>daemon_text.png</file>
+        <file>device_text.png</file>
+        <file>device_text_color.png</file>
+        <file>qk_24.png</file>
+        <file>qk_64.png</file>
+    </qresource>
+</RCC>

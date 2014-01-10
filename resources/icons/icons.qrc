@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>explorer.png</file>
+        <file>off_16.png</file>
+        <file>on_16.png</file>
+        <file>minus_16.png</file>
+        <file>reload.png</file>
+        <file>raw.png</file>
+        <file>settings_16.png</file>
+        <file>help_16.png</file>
+        <file>info_16.png</file>
+        <file>notepad_w_16.png</file>
+        <file>export_16.png</file>
+        <file>plus_16.png</file>
+        <file>plots_16.png</file>
+        <file>logger_16.png</file>
+        <file>message_16.png</file>
+        <file>debug_16.png</file>
+    </qresource>
+</RCC>

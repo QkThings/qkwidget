@@ -1,0 +1,12 @@
+#ifndef QKWIDGET_GLOBAL_H
+#define QKWIDGET_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(QKWIDGET_LIBRARY)
+#  define QKWIDGETSHARED_EXPORT Q_DECL_EXPORT
+#else
+#  define QKWIDGETSHARED_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // QKWIDGET_GLOBAL_H
