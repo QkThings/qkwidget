@@ -200,7 +200,7 @@ void QkExplorerWidget::slotExplorerListRowChanged(int row)
 
 void QkExplorerWidget::slotDataReceived(int address)
 {
-    qDebug() << "slotDataReceived()";
+    //qDebug() << "slotDataReceived()";
     if(m_selNode != 0 && m_selNode->address() == address)
     {
         ui->deviceBoardPanel->refreshData();

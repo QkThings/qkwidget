@@ -35,19 +35,29 @@ public:
     Waveform* addWaveform(const QString &name = QString(), const QColor &color = QColor());
     Waveform* waveform(int id);
     QList<Waveform*> waveforms();
-    void setTimeWindow(int sec);
     int timeWindow();
+    double amplitudeMin() { return yAxis->range().minRange; }
+    double amplitudeMax() { return yAxis->range().minRange; }
+    bool autoscale() { return m_autoScale; }
 
 signals:
 
 public slots:
+    void setTimeWindow(int sec);
+    void setAmplitude(double min, double max);
+    void setAutoscale(bool enabled) { m_autoScale = enabled; }
     void start();
     void stop();
     void addData(double data, int id);
     void addData(double data, Waveform *wf);
 
 private slots:
-
+    void slotMousePress();
+    void slotMouseWheel();
+    void titleDoubleClick(QMouseEvent* event, QCPPlotTitle* title);
+    void axisLabelDoubleClick(QCPAxis *axis, QCPAxis::SelectablePart part);
+    void legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item);
+    void selectionChanged();
 
 private:
     void _setup();
@@ -61,8 +71,10 @@ private:
     int m_nextColorIdx;
     QVector<QColor> m_defaultColors;
     QElapsedTimer m_clock;
+    QTimer m_timer;
     QMap<int, Waveform*> m_waveforms;
-    bool m_replotAfterAdd;
+    //bool m_replotAfterAdd;
+    bool m_autoScale;
 };
 
 class WaveformMapper

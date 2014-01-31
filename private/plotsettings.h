@@ -24,6 +24,8 @@ public slots:
     void setGlobal(bool enabled);
     void slotSetTitle(const QString &title);
     void slotSetTimeWindow(int timeWindow);
+    void slotSetAmplitude();
+    void slotSetAutoscale(bool enabled);
     void slotShowHideTitle(bool show);
     void slotShowHideLegend(bool show);
     void reloadInterface();

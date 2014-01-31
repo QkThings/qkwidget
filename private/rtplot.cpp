@@ -48,23 +48,168 @@ RTPlot::RTPlot(QWidget *parent) :
 {
     m_timeWindow_sec = 10.0;
     m_clock.restart();
-    m_replotAfterAdd = true;
+    m_timer.setInterval(50);
+    connect(&m_timer, SIGNAL(timeout()), this, SLOT(replot()));
 
     m_nextColorIdx = 0;
-    m_defaultColors.append(Qt::blue);
-    m_defaultColors.append(Qt::red);
-    m_defaultColors.append(Qt::black);
+    m_defaultColors.append(QColor("#0c50e0"));
+    m_defaultColors.append(QColor("#ff312a"));
+    m_defaultColors.append(QColor("#4d4d4d"));
+    m_defaultColors.append(QColor("#00b460"));
+    m_defaultColors.append(QColor("#c88400"));
+    m_defaultColors.append(QColor("#a100e0"));
+    m_defaultColors.append(QColor("#e00065"));
 
     _setup();
 }
 
 void RTPlot::_setup()
 {
+    setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectAxes |
+                    QCP::iSelectLegend | QCP::iSelectPlottables);
+
+    plotLayout()->insertRow(0);
+    plotLayout()->addElement(0, 0, new QCPPlotTitle(this, "Interaction Example"));
+
+    xAxis->setLabel("Time");
+    yAxis->setLabel("Amplitude");
+
     xAxis->setRange(0.0, m_timeWindow_sec);
     yAxis->setRange(-1.0, 1.0);
     axisRect()->setupFullAxesBox();
+
+    legend->setSelectableParts(QCPLegend::spItems); // legend box shall not be selectable, only legend items
+
+    // connect slot that ties some axis selections together (especially opposite axes):
+    connect(this, SIGNAL(selectionChangedByUser()), this, SLOT(selectionChanged()));
+    // connect slots that takes care that when an axis is selected, only that direction can be dragged and zoomed:
+    connect(this, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(slotMousePress()));
+    connect(this, SIGNAL(mouseWheel(QWheelEvent*)), this, SLOT(slotMouseWheel()));
+
+    // make bottom and left axes transfer their ranges to top and right axes:
     connect(xAxis, SIGNAL(rangeChanged(QCPRange)), xAxis2, SLOT(setRange(QCPRange)));
     connect(yAxis, SIGNAL(rangeChanged(QCPRange)), yAxis2, SLOT(setRange(QCPRange)));
+
+    // connect some interaction slots:
+    connect(this, SIGNAL(titleDoubleClick(QMouseEvent*,QCPPlotTitle*)), this, SLOT(titleDoubleClick(QMouseEvent*,QCPPlotTitle*)));
+    connect(this, SIGNAL(axisDoubleClick(QCPAxis*,QCPAxis::SelectablePart,QMouseEvent*)), this, SLOT(axisLabelDoubleClick(QCPAxis*,QCPAxis::SelectablePart)));
+    connect(this, SIGNAL(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*,QMouseEvent*)), this, SLOT(legendDoubleClick(QCPLegend*,QCPAbstractLegendItem*)));
+}
+
+void RTPlot::titleDoubleClick(QMouseEvent* event, QCPPlotTitle* title)
+{
+  Q_UNUSED(event)
+  // Set the plot title by double clicking on it
+  bool ok;
+  QString newTitle = QInputDialog::getText(this, "QCustomPlot example", "New plot title:", QLineEdit::Normal, title->text(), &ok);
+  if (ok)
+  {
+    title->setText(newTitle);
+    replot();
+  }
+}
+
+void RTPlot::axisLabelDoubleClick(QCPAxis *axis, QCPAxis::SelectablePart part)
+{
+  // Set an axis label by double clicking on it
+  if (part == QCPAxis::spAxisLabel) // only react when the actual axis label is clicked, not tick label or axis backbone
+  {
+    bool ok;
+    QString newLabel = QInputDialog::getText(this, "QCustomPlot example", "New axis label:", QLineEdit::Normal, axis->label(), &ok);
+    if (ok)
+    {
+      axis->setLabel(newLabel);
+      replot();
+    }
+  }
+}
+
+void RTPlot::legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item)
+{
+  // Rename a graph by double clicking on its legend item
+  Q_UNUSED(legend)
+  if (item) // only react if item was clicked (user could have clicked on border padding of legend where there is no item, then item is 0)
+  {
+    QCPPlottableLegendItem *plItem = qobject_cast<QCPPlottableLegendItem*>(item);
+    bool ok;
+    QString newName = QInputDialog::getText(this, "QCustomPlot example", "New graph name:", QLineEdit::Normal, plItem->plottable()->name(), &ok);
+    if (ok)
+    {
+      plItem->plottable()->setName(newName);
+      replot();
+    }
+  }
+}
+
+void RTPlot::slotMousePress()
+{
+        qDebug() << "slotMousePress()";
+  // if an axis is selected, only allow the direction of that axis to be dragged
+  // if no axis is selected, both directions may be dragged
+
+  if (xAxis->selectedParts().testFlag(QCPAxis::spAxis))
+    axisRect()->setRangeDrag(xAxis->orientation());
+  else if (yAxis->selectedParts().testFlag(QCPAxis::spAxis))
+    axisRect()->setRangeDrag(yAxis->orientation());
+  else
+    axisRect()->setRangeDrag(Qt::Horizontal|Qt::Vertical);
+}
+
+void RTPlot::slotMouseWheel()
+{
+  // if an axis is selected, only allow the direction of that axis to be zoomed
+  // if no axis is selected, both directions may be zoomed
+
+//  if (xAxis->selectedParts().testFlag(QCPAxis::spAxis))
+//    axisRect()->setRangeZoom(xAxis->orientation());
+//  else if (yAxis->selectedParts().testFlag(QCPAxis::spAxis))
+//    axisRect()->setRangeZoom(yAxis->orientation());
+//  else
+//    axisRect()->setRangeZoom(Qt::Horizontal|Qt::Vertical);
+}
+
+void RTPlot::selectionChanged()
+{
+    qDebug() << "selectionChanged()";
+  /*
+   normally, axis base line, axis tick labels and axis labels are selectable separately, but we want
+   the user only to be able to select the axis as a whole, so we tie the selected states of the tick labels
+   and the axis base line together. However, the axis label shall be selectable individually.
+
+   The selection state of the left and right axes shall be synchronized as well as the state of the
+   bottom and top axes.
+
+   Further, we want to synchronize the selection of the graphs with the selection state of the respective
+   legend item belonging to that graph. So the user can select a graph by either clicking on the graph itself
+   or on its legend item.
+  */
+
+  // make top and bottom axes be selected synchronously, and handle axis and tick labels as one selectable object:
+  if (xAxis->selectedParts().testFlag(QCPAxis::spAxis) || xAxis->selectedParts().testFlag(QCPAxis::spTickLabels) ||
+      xAxis2->selectedParts().testFlag(QCPAxis::spAxis) || xAxis2->selectedParts().testFlag(QCPAxis::spTickLabels))
+  {
+    xAxis2->setSelectedParts(QCPAxis::spAxis|QCPAxis::spTickLabels);
+    xAxis->setSelectedParts(QCPAxis::spAxis|QCPAxis::spTickLabels);
+  }
+  // make left and right axes be selected synchronously, and handle axis and tick labels as one selectable object:
+  if (yAxis->selectedParts().testFlag(QCPAxis::spAxis) || yAxis->selectedParts().testFlag(QCPAxis::spTickLabels) ||
+      yAxis2->selectedParts().testFlag(QCPAxis::spAxis) || yAxis2->selectedParts().testFlag(QCPAxis::spTickLabels))
+  {
+    yAxis2->setSelectedParts(QCPAxis::spAxis|QCPAxis::spTickLabels);
+    yAxis->setSelectedParts(QCPAxis::spAxis|QCPAxis::spTickLabels);
+  }
+
+  // synchronize selection of graphs with selection of corresponding legend items:
+  for (int i=0; i<graphCount(); ++i)
+  {
+    QCPGraph *g = graph(i);
+    QCPPlottableLegendItem *item = legend->itemWithPlottable(g);
+    if (item->selected() || g->selected())
+    {
+      item->setSelected(true);
+      g->setSelected(true);
+    }
+  }
 }
 
 Waveform* RTPlot::addWaveform(const QString &name, const QColor &color)
@@ -111,6 +256,12 @@ void RTPlot::setTimeWindow(int sec)
     replot();
 }
 
+void RTPlot::setAmplitude(double min, double max)
+{
+    yAxis->setRange(min, max);
+    replot();
+}
+
 int RTPlot::timeWindow()
 {
     return m_timeWindow_sec;
@@ -119,10 +270,12 @@ int RTPlot::timeWindow()
 void RTPlot::start()
 {
     m_clock.restart();
+    m_timer.start();
 }
 
 void RTPlot::stop()
 {
+    m_timer.stop();
     _clearAllWaveforms();
 }
 
@@ -131,10 +284,8 @@ void RTPlot::addData(double data, Waveform *wf)
     double time = _elapsedSeconds();
     //qDebug() << "addData" << time << data;
     wf->graph->addData(time, data);
-    wf->graph->rescaleValueAxis(true, true);
-
-    if(m_replotAfterAdd)
-        replot();
+    if(m_autoScale)
+        wf->graph->rescaleValueAxis(true, false);
 }
 
 void RTPlot::addData(double data, int id)

@@ -37,7 +37,8 @@ void PlotSettings::setupConnections()
     connect(ui->spinTimeWindow, SIGNAL(valueChanged(int)), this, SLOT(slotSetTimeWindow(int)));
     connect(ui->checkShowTitle, SIGNAL(clicked(bool)), this, SLOT(slotShowHideTitle(bool)));
     connect(ui->checkShowLegend, SIGNAL(clicked(bool)), this, SLOT(slotShowHideLegend(bool)));
-
+    connect(ui->spinAmplitudeMin, SIGNAL(valueChanged(double)), this, SLOT(slotSetAmplitude()));
+    connect(ui->spinAmplitudeMax, SIGNAL(valueChanged(double)), this, SLOT(slotSetAmplitude()));
     connect(ui->tableWaveforms, SIGNAL(currentCellChanged(int,int,int,int)),
             this, SLOT(updateInterface()));
     connect(ui->comboData, SIGNAL(currentIndexChanged(int)),
@@ -74,9 +75,21 @@ void PlotSettings::slotSetTitle(const QString &title)
     m_currentPlotDock->setWindowTitle(title);
 }
 
+void PlotSettings::slotSetAmplitude()
+{
+    double min = ui->spinAmplitudeMin->value();
+    double max = ui->spinAmplitudeMax->value();
+    m_currentPlotDock->plot()->setAmplitude(min,max);
+}
+
 void PlotSettings::slotSetTimeWindow(int timeWindow)
 {
     m_currentPlotDock->plot()->setTimeWindow(timeWindow);
+}
+
+void PlotSettings::slotSetAutoscale(bool enabled)
+{
+    m_currentPlotDock->plot()->setAutoscale(enabled);
 }
 
 void PlotSettings::slotShowHideTitle(bool show)
@@ -87,6 +100,7 @@ void PlotSettings::slotShowHideTitle(bool show)
 void PlotSettings::slotShowHideLegend(bool show)
 {
     m_currentPlotDock->plot()->legend->setVisible(show);
+    m_currentPlotDock->plot()->replot();
 }
 
 void PlotSettings::reloadInterface()
@@ -100,6 +114,9 @@ void PlotSettings::reloadInterface()
 
     ui->lineTitle->setText(plotDock->windowTitle());
     ui->spinTimeWindow->setValue(plot->timeWindow());
+    ui->spinAmplitudeMin->setValue(plot->amplitudeMin());
+    ui->spinAmplitudeMax->setValue(plot->amplitudeMax());
+    ui->checkAutoscale->setChecked(plot->autoscale());
 
     updateInterface();
 }
