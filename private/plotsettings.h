@@ -2,19 +2,24 @@
 #define PLOTSETTINGS_H
 
 #include <QWidget>
+#include "rtplot.h"
 
 namespace Ui {
 class PlotSettings;
 }
 
-class RTPlotDock;
-class Waveform;
 
 class PlotSettings : public QWidget
 {
     Q_OBJECT
 
 public:
+    enum {
+        ColumnWaveformID,
+        ColumnWaveformName,
+        ColumnWaveformColor,
+        ColumnWaveformCount
+    };
     explicit PlotSettings(QWidget *parent = 0);
     ~PlotSettings();
 
@@ -26,8 +31,10 @@ public slots:
     void slotSetTimeWindow(int timeWindow);
     void slotSetAmplitude();
     void slotSetAutoscale(bool enabled);
+    void slotSetStopAtEnd(bool enabled);
     void slotShowHideTitle(bool show);
     void slotShowHideLegend(bool show);
+    void slotShowHideAxis();
     void reloadInterface();
     void updateInterface();
 
@@ -35,12 +42,6 @@ public:
     Ui::PlotSettings *ui;
 
 private:
-    enum {
-        ColumnWaveformID,
-        ColumnWaveformName,
-        ColumnWaveformColor,
-        ColumnWaveformCount
-    };
 
     void setupConnections();
     void addWaveformToTable(Waveform *wf);

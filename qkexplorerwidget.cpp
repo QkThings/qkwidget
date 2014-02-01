@@ -33,6 +33,10 @@
 #include <QVBoxLayout>
 #include <QLayout>
 #include <QPalette>
+#include <QPixmap>
+
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
 
 QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     QMainWindow(parent),
@@ -45,10 +49,13 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     m_commBoardPanel = ui->commBoardPanel;
     m_deviceBoardPanel = ui->deviceBoardPanel;
 
+    QFontDatabase::addApplicationFont("://fonts/Ubuntu-R.ttf");
+    QFontDatabase::addApplicationFont("://fonts/OpenSans-Regular.ttf");
+    QFontDatabase::addApplicationFont("://fonts/PTSans.ttf");
+
     setupLayout();
     setupConnections();
     setup();
-    updateInterface();
     updateInterface();
 }
 
@@ -69,6 +76,7 @@ void QkExplorerWidget::setModeFlags(int flags)
 
 void QkExplorerWidget::setup()
 {
+    slotReloadSerialPorts();
     ui->plottingWidget->setLayout(new QVBoxLayout);
     QLayout *layout = ui->plottingWidget->layout();
     layout->setMargin(0);
@@ -80,7 +88,7 @@ void QkExplorerWidget::setupLayout()
 {
     ui->setupUi(this);
     ui->menubar->hide();
-    ui->statusBar->hide();
+    //ui->statusBar->hide();
     ui->debugText->setFont(GUI_MONOFONT);
     ui->explorerTabs->setCurrentIndex(0);
 
@@ -90,8 +98,11 @@ void QkExplorerWidget::setupLayout()
 
 void QkExplorerWidget::setupConnections()
 {
-    connect(ui->connect_button, SIGNAL(clicked()),
+    connect(ui->buttonReloadSerialPorts, SIGNAL(clicked()),
+            this, SLOT(slotReloadSerialPorts()));
+    connect(ui->buttonConnect, SIGNAL(clicked()),
             this, SLOT(slotConnect()));
+
     connect(ui->search_button, SIGNAL(clicked()),
             this, SLOT(slotSearch()));
     connect(ui->start_button, SIGNAL(clicked()),
@@ -131,6 +142,7 @@ void QkExplorerWidget::setupConnections()
     connect(ui->viewer_buttonSettings, SIGNAL(clicked(bool)), ui->plotSettings, SLOT(setVisible(bool)));
     connect(ui->viewer_buttonSettings, SIGNAL(clicked(bool)), ui->viewer_checkGlobal, SLOT(setVisible(bool)));
     connect(ui->viewer_buttonAddPlot, SIGNAL(clicked()),this, SLOT(slotViewer_addPlot()));
+    connect(ui->viewer_buttonRemovePlot, SIGNAL(clicked()),this, SLOT(slotViewer_removePlot()));
     connect(ui->viewer_comboPlot, SIGNAL(currentIndexChanged(int)),this, SLOT(slotViewer_currentPlotChanged(int)));
 
     PlotSettings *plotSettings = ui->plotSettings;
@@ -139,6 +151,8 @@ void QkExplorerWidget::setupConnections()
 
     connect(plotSettings->ui->buttonAddWaveform, SIGNAL(clicked()),
             this, SLOT(slotViewer_addWaveform()));
+    connect(plotSettings->ui->buttonRemoveWaveform, SIGNAL(clicked()),
+            this, SLOT(slotViewer_removeWaveform()));
 }
 
 void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
@@ -300,13 +314,50 @@ int QkExplorerWidget::explorerList_findNode(int address)
     return -1;
 }
 
+void QkExplorerWidget::slotReloadSerialPorts()
+{
+    QStringList list;
+    foreach(QSerialPortInfo info, QSerialPortInfo::availablePorts())
+    {
+        QString portName = info.portName();
+        if(portName.contains("ACM") || portName.contains("USB"))
+            list.append(portName);
+    }
+    ui->comboPort->clear();
+    ui->comboPort->addItems(list);
+}
+
 void QkExplorerWidget::slotConnect()
 {
+//    qDebug() << "slotConnect()";
+//    if(m_conn->isConnected())
+//        m_conn->close();
+//    else
+//        m_conn->open();
+//    updateInterface();
+
     qDebug() << "slotConnect()";
+
     if(m_conn->isConnected())
+    {
+        ui->statusBar->showMessage(tr("Disconnecting..."));
         m_conn->close();
+        ui->statusBar->showMessage(tr("Disconnected"), 1000);
+    }
     else
-        m_conn->open();
+    {
+        if(m_conn->descriptor().type == QkConnection::ctSerial)
+        {
+            QkSerialConnection *serialConn = (QkSerialConnection*)m_conn;
+            serialConn->setBaudRate(38400);
+            serialConn->setPortName(ui->comboPort->currentText());
+        }
+        ui->statusBar->showMessage(tr("Connecting"));
+        if(m_conn->open())
+            ui->statusBar->showMessage(tr("Connected"), 1000);
+        else
+            ui->statusBar->clearMessage();
+    }
     updateInterface();
 }
 
@@ -327,6 +378,11 @@ void QkExplorerWidget::slotStart()
     m_conn->qk()->start();
     foreach(RTPlotDock *plotDock, m_plotDockMapper.values())
         plotDock->plot()->start();
+
+    ui->status_label->setText(tr("Running"));
+
+    QString style = "QLabel { background: #00b460; color: white; padding: 2px;}";
+    ui->status_label->setStyleSheet(style);
 }
 
 void QkExplorerWidget::slotStop()
@@ -334,6 +390,11 @@ void QkExplorerWidget::slotStop()
     m_conn->qk()->stop();
     foreach(RTPlotDock *plotDock, m_plotDockMapper.values())
         plotDock->plot()->stop();
+
+    ui->status_label->setText(tr("Stopped"));
+
+    QString style = "QLabel { background: #eb7d7d; color: white; padding: 2px;}";
+    ui->status_label->setStyleSheet(style);
 }
 
 void QkExplorerWidget::slotClear()
@@ -365,8 +426,10 @@ void QkExplorerWidget::updateInterface()
     ui->label->setHidden(nothingToShow);
     ui->explorerList->setHidden(nothingToShow);
 
+    bool removePlotEnabled = (ui->viewer_comboPlot->count() > 1);
+    ui->viewer_buttonRemovePlot->setEnabled(removePlotEnabled);
+
     bool modeSingleConnection = (m_modeFlags | mfSingleConnection ? true : false);
-    ui->connect_button->setVisible(modeSingleConnection);
 
     bool modeSingleNode = (m_modeFlags | mfSingleNode ? true : false);
     ui->plotSettings->ui->comboNode->setHidden(modeSingleNode);
@@ -376,13 +439,15 @@ void QkExplorerWidget::updateInterface()
     bool connected = (m_conn != 0 && m_conn->isConnected() ? true : false);
     if(connected)
     {
-        ui->connect_button->setText(tr("Connected"));
-        ui->connect_button->setPalette(QPalette(QColor("#b5eaa5")));
+        ui->buttonConnect->setText(tr("Connected"));
+        ui->buttonConnect->setPalette(QPalette(QColor("#b5eaa5")));
+        ui->comboPort->setDisabled(true);
     }
     else
     {
-        ui->connect_button->setText(tr("Disconnected"));
-        ui->connect_button->setPalette(QPalette(QColor("#f8c3c2")));
+        ui->buttonConnect->setText(tr("Disconnected"));
+        ui->buttonConnect->setPalette(QPalette(QColor("#f8c3c2")));
+        ui->comboPort->setDisabled(false);
     }
 }
 
@@ -447,6 +512,25 @@ void QkExplorerWidget::slotViewer_addPlot()
     ui->viewer_comboPlot->setCurrentIndex(ui->viewer_comboPlot->count()-1);
 }
 
+void QkExplorerWidget::slotViewer_removePlot()
+{
+    int currentPlotIdx = ui->viewer_comboPlot->currentIndex();
+    int plotDockID = ui->viewer_comboPlot->itemData(currentPlotIdx).toInt();
+    RTPlotDock *plotDock = m_plotDockMapper.value(plotDockID);
+    RTPlot *plot = plotDock->plot();
+
+    foreach(Waveform *wf, plot->waveforms())
+    {
+        m_waveformMapper.remove(m_waveformMapper.key(wf));
+        m_plotMapper.remove(wf);
+    }
+    plot->removeWaveforms();
+    m_plotDockMapper.remove(plotDock->id());
+    delete plotDock;
+
+    ui->viewer_comboPlot->removeItem(currentPlotIdx);
+}
+
 void QkExplorerWidget::slotViewer_addWaveform()
 {   
     qDebug() << "slotViewer_addWaveform()";
@@ -476,6 +560,31 @@ void QkExplorerWidget::slotViewer_addWaveform()
     }
 
     plotSettings->setCurrentPlotDock(plotDock);
+
+    int nextPlotIdx = (dataIdx + 1) % plotSettings->ui->comboData->count();
+    plotSettings->ui->comboData->setCurrentIndex(nextPlotIdx);
+}
+
+void QkExplorerWidget::slotViewer_removeWaveform()
+{
+    int currentPlotIdx = ui->viewer_comboPlot->currentIndex();
+    int plotDockID = ui->viewer_comboPlot->itemData(currentPlotIdx).toInt();
+    RTPlotDock *plotDock = m_plotDockMapper.value(plotDockID);
+    RTPlot *plot = plotDock->plot();
+
+    PlotSettings *plotSettings = ui->plotSettings;
+    pTableWidget *table = plotSettings->ui->tableWaveforms;
+    int row = table->currentRow();
+    if(row < 0) return;
+
+    int id = table->item(row, PlotSettings::ColumnWaveformID)->text().toInt();
+
+    Waveform *wf = plot->waveform(id);
+    m_waveformMapper.remove(m_waveformMapper.key(wf));
+    m_plotMapper.remove(wf);
+    plot->removeWaveform(id);
+
+    table->removeRow(row);
 }
 
 void QkExplorerWidget::slotViewer_nodeChanged(QString addrStr)
@@ -513,6 +622,8 @@ void QkExplorerWidget::slotViewer_currentPlotChanged(int idx)
 
     if(m_currentPlotDock != 0)
         ui->plotSettings->setCurrentPlotDock(m_currentPlotDock);
+
+    updateInterface();
 }
 
 void QkExplorerWidget::slotViewer_plotTitleChanged(int id, QString title)

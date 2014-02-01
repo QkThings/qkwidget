@@ -47,6 +47,9 @@ RTPlot::RTPlot(QWidget *parent) :
     QCustomPlot(parent)
 {
     m_timeWindow_sec = 10.0;
+    m_autoscale = true;
+    m_stopAtEnd = false;
+    m_elaspedTimerReset = false;
     m_clock.restart();
     m_timer.setInterval(50);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(replot()));
@@ -64,20 +67,36 @@ RTPlot::RTPlot(QWidget *parent) :
 }
 
 void RTPlot::_setup()
-{
-    setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectAxes |
-                    QCP::iSelectLegend | QCP::iSelectPlottables);
+{   
+    setInteractions(QCP::iSelectAxes |
+                    QCP::iSelectLegend);
 
-    plotLayout()->insertRow(0);
-    plotLayout()->addElement(0, 0, new QCPPlotTitle(this, "Interaction Example"));
+    m_title = new QCPPlotTitle(this, "Interaction Example");
+    m_title->setFont(QFont("OpenSans-Regular",12));
 
-    xAxis->setLabel("Time");
-    yAxis->setLabel("Amplitude");
+    //plotLayout()->insertRow(0);
+    //plotLayout()->setRowStretchFactor(0, 0.0);
+    QFont axisLabelFont("Ubuntu-R",8);
+    xAxis->setLabelFont(axisLabelFont);
+    yAxis->setLabelFont(axisLabelFont);
+    xAxis->setTickLabelFont(axisLabelFont);
+    yAxis->setTickLabelFont(axisLabelFont);
+    showTitle(false);
+    //plotLayout()->addElement(0, 0, m_title);
+
+    xAxis->setSelectableParts(QCPAxis::spAxisLabel);
+    yAxis->setSelectableParts(QCPAxis::spAxisLabel);
 
     xAxis->setRange(0.0, m_timeWindow_sec);
     yAxis->setRange(-1.0, 1.0);
+
     axisRect()->setupFullAxesBox();
 
+    m_xAxisLabel = tr("Time");
+    m_yAxisLabel = tr("Amplitude");
+    showAxis(false, false);
+
+    legend->setFont(QFont("Ubuntu-R",8));
     legend->setSelectableParts(QCPLegend::spItems); // legend box shall not be selectable, only legend items
 
     // connect slot that ties some axis selections together (especially opposite axes):
@@ -101,7 +120,7 @@ void RTPlot::titleDoubleClick(QMouseEvent* event, QCPPlotTitle* title)
   Q_UNUSED(event)
   // Set the plot title by double clicking on it
   bool ok;
-  QString newTitle = QInputDialog::getText(this, "QCustomPlot example", "New plot title:", QLineEdit::Normal, title->text(), &ok);
+  QString newTitle = QInputDialog::getText(this, "", "New plot title:", QLineEdit::Normal, title->text(), &ok);
   if (ok)
   {
     title->setText(newTitle);
@@ -115,7 +134,7 @@ void RTPlot::axisLabelDoubleClick(QCPAxis *axis, QCPAxis::SelectablePart part)
   if (part == QCPAxis::spAxisLabel) // only react when the actual axis label is clicked, not tick label or axis backbone
   {
     bool ok;
-    QString newLabel = QInputDialog::getText(this, "QCustomPlot example", "New axis label:", QLineEdit::Normal, axis->label(), &ok);
+    QString newLabel = QInputDialog::getText(this, "", "New axis label:", QLineEdit::Normal, axis->label(), &ok);
     if (ok)
     {
       axis->setLabel(newLabel);
@@ -132,7 +151,7 @@ void RTPlot::legendDoubleClick(QCPLegend *legend, QCPAbstractLegendItem *item)
   {
     QCPPlottableLegendItem *plItem = qobject_cast<QCPPlottableLegendItem*>(item);
     bool ok;
-    QString newName = QInputDialog::getText(this, "QCustomPlot example", "New graph name:", QLineEdit::Normal, plItem->plottable()->name(), &ok);
+    QString newName = QInputDialog::getText(this, "", "New graph name:", QLineEdit::Normal, plItem->plottable()->name(), &ok);
     if (ok)
     {
       plItem->plottable()->setName(newName);
@@ -160,10 +179,10 @@ void RTPlot::slotMouseWheel()
   // if an axis is selected, only allow the direction of that axis to be zoomed
   // if no axis is selected, both directions may be zoomed
 
-//  if (xAxis->selectedParts().testFlag(QCPAxis::spAxis))
-//    axisRect()->setRangeZoom(xAxis->orientation());
-//  else if (yAxis->selectedParts().testFlag(QCPAxis::spAxis))
-//    axisRect()->setRangeZoom(yAxis->orientation());
+  if (xAxis->selectedParts().testFlag(QCPAxis::spAxis))
+    axisRect()->setRangeZoom(xAxis->orientation());
+  else if (yAxis->selectedParts().testFlag(QCPAxis::spAxis))
+    axisRect()->setRangeZoom(yAxis->orientation());
 //  else
 //    axisRect()->setRangeZoom(Qt::Horizontal|Qt::Vertical);
 }
@@ -239,6 +258,19 @@ Waveform* RTPlot::addWaveform(const QString &name, const QColor &color)
     return wf;
 }
 
+void RTPlot::removeWaveform(int id)
+{
+    Waveform *wf = waveform(id);
+    if(m_waveforms.remove(id) > 0)
+        delete wf;
+}
+
+void RTPlot::removeWaveforms()
+{
+    qDeleteAll(m_waveforms.begin(), m_waveforms.end());
+    m_waveforms.clear();
+}
+
 Waveform* RTPlot::waveform(int id)
 {
     return m_waveforms.value(id);
@@ -247,6 +279,53 @@ Waveform* RTPlot::waveform(int id)
 QList<Waveform*> RTPlot::waveforms()
 {
     return m_waveforms.values();
+}
+
+void RTPlot::setTitle(const QString &title)
+{
+    m_title->setText(title);
+}
+
+void RTPlot::showTitle(bool show)
+{
+    m_title->setVisible(show);
+    if(show)
+    {
+        plotLayout()->insertRow(0);
+        plotLayout()->addElement(0, 0, m_title);
+    }
+    else
+    {
+        if(plotLayout()->hasElement(0,0)) {
+            plotLayout()->take(m_title);
+            plotLayout()->simplify();
+        }
+    }
+    replot();
+}
+
+void RTPlot::showAxis(bool x, bool y)
+{
+    if(y)
+        yAxis->setLabel(m_yAxisLabel);
+    else
+    {
+        yAxis->setLabel("");
+    }
+
+    if(x)
+        xAxis->setLabel(m_xAxisLabel);
+    else
+    {
+        xAxis->setLabel("");
+    }
+
+    replot();
+
+//    xAxis->setVisible(x);
+//    xAxis2->setVisible(x);
+//    yAxis->setVisible(y);
+//    yAxis2->setVisible(y);
 }
 
 void RTPlot::setTimeWindow(int sec)
@@ -267,8 +346,23 @@ int RTPlot::timeWindow()
     return m_timeWindow_sec;
 }
 
+void RTPlot::setStopAtEnd(bool enabled)
+{
+    if(m_stopAtEnd && !enabled)
+        _clearAllWaveforms();
+
+    m_stopAtEnd = enabled;
+    if(!enabled)
+    {
+        m_elaspedTimerReset = false;
+        m_clock.restart();
+    }
+}
+
 void RTPlot::start()
 {
+    _clearAllWaveforms();
+    m_elaspedTimerReset = false;
     m_clock.restart();
     m_timer.start();
 }
@@ -276,15 +370,16 @@ void RTPlot::start()
 void RTPlot::stop()
 {
     m_timer.stop();
-    _clearAllWaveforms();
 }
 
 void RTPlot::addData(double data, Waveform *wf)
 {
     double time = _elapsedSeconds();
+    if(m_stopAtEnd && m_elaspedTimerReset)
+        return;
     //qDebug() << "addData" << time << data;
     wf->graph->addData(time, data);
-    if(m_autoScale)
+    if(m_autoscale)
         wf->graph->rescaleValueAxis(true, false);
 }
 
@@ -309,7 +404,10 @@ double RTPlot::_elapsedSeconds()
     {
         m_clock.restart();
         elapsed_sec = 0.0;
-        _clearAllWaveforms();
+        if(m_stopAtEnd)
+            m_elaspedTimerReset = true;
+        else
+            _clearAllWaveforms();
     }
     return elapsed_sec;
 }
@@ -321,11 +419,6 @@ QColor RTPlot::_pickWaveformColor()
         m_nextColorIdx = 0;
 
     return m_defaultColors.at(colorIdx);
-}
-
-void RTPlot::mousePressEvent(QMouseEvent *event)
-{
-    //qDebug() << "plot" << m_id << " focused";
 }
 
 int RTPlotDock::nextID = 0;
@@ -345,6 +438,8 @@ RTPlotDock::RTPlotDock(RTPlot *plot, QWidget *parent) :
 void RTPlotDock::setWindowTitle(const QString &title)
 {
     QDockWidget::setWindowTitle(title);
+    m_plot->setTitle(title);
+    m_plot->replot();
     emit titleChanged(m_id, title);
 }
 

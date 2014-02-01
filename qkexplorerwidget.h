@@ -37,6 +37,7 @@ public slots:
     void setCurrentConnection(QkConnection *conn);
 
 private slots:
+    void slotReloadSerialPorts();
     void slotConnect();
     void slotSearch();
     void slotStart();
@@ -57,7 +58,9 @@ private slots:
     void slotDebug_setEnabled(bool enabled);
 
     void slotViewer_addPlot();
+    void slotViewer_removePlot();
     void slotViewer_addWaveform();
+    void slotViewer_removeWaveform();
     void slotViewer_nodeChanged(QString addrStr);
     void slotViewer_dockSelected(int id);
     void slotViewer_currentPlotChanged(int idx);

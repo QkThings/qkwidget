@@ -33,23 +33,30 @@ class RTPlot : public QCustomPlot
 public:
     explicit RTPlot(QWidget *parent = 0);
     Waveform* addWaveform(const QString &name = QString(), const QColor &color = QColor());
+    void removeWaveform(int id);
+    void removeWaveforms();
     Waveform* waveform(int id);
     QList<Waveform*> waveforms();
     int timeWindow();
-    double amplitudeMin() { return yAxis->range().minRange; }
-    double amplitudeMax() { return yAxis->range().minRange; }
-    bool autoscale() { return m_autoScale; }
+    double amplitudeMin() { return yAxis->range().lower; }
+    double amplitudeMax() { return yAxis->range().upper; }
+    bool autoscale() { return m_autoscale; }
+    bool stopAtEnd() { return m_stopAtEnd; }
 
 signals:
 
 public slots:
+    void setTitle(const QString &title);
     void setTimeWindow(int sec);
     void setAmplitude(double min, double max);
-    void setAutoscale(bool enabled) { m_autoScale = enabled; }
+    void setAutoscale(bool enabled) { setAmplitude(0.0,0.0); m_autoscale = enabled; }
+    void setStopAtEnd(bool enabled);
     void start();
     void stop();
     void addData(double data, int id);
     void addData(double data, Waveform *wf);
+    void showTitle(bool show);
+    void showAxis(bool x, bool y);
 
 private slots:
     void slotMousePress();
@@ -64,7 +71,6 @@ private:
     void _clearAllWaveforms();
     double _elapsedSeconds();
     QColor _pickWaveformColor();
-    void mousePressEvent(QMouseEvent *event);
 
     int m_id;
     double m_timeWindow_sec;
@@ -72,9 +78,13 @@ private:
     QVector<QColor> m_defaultColors;
     QElapsedTimer m_clock;
     QTimer m_timer;
+    QString m_xAxisLabel, m_yAxisLabel;
     QMap<int, Waveform*> m_waveforms;
+    QCPPlotTitle *m_title;
     //bool m_replotAfterAdd;
-    bool m_autoScale;
+    bool m_autoscale;
+    bool m_stopAtEnd;
+    bool m_elaspedTimerReset;
 };
 
 class WaveformMapper

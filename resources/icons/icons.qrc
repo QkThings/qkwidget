@@ -16,5 +16,9 @@
         <file>logger_16.png</file>
         <file>message_16.png</file>
         <file>debug_16.png</file>
+        <file>stop_16.png</file>
+        <file>play_16.png</file>
+        <file>status_stopped_16.png</file>
+        <file>status_running_16.png</file>
     </qresource>
 </RCC>

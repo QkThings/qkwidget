@@ -77,7 +77,8 @@ FORMS += \
 
 RESOURCES += \
     resources/icons/icons.qrc \
-    resources/img/img.qrc
+    resources/img/img.qrc \
+    resources/fonts/fonts.qrc
 
 
 CONFIG(debug, debug|release) {

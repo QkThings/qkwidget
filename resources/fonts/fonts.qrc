@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/fonts">
+        <file>Ubuntu-R.ttf</file>
+        <file>PTSans.ttf</file>
+        <file>OpenSans-Regular.ttf</file>
+    </qresource>
+</RCC>

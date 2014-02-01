@@ -37,6 +37,10 @@ void PlotSettings::setupConnections()
     connect(ui->spinTimeWindow, SIGNAL(valueChanged(int)), this, SLOT(slotSetTimeWindow(int)));
     connect(ui->checkShowTitle, SIGNAL(clicked(bool)), this, SLOT(slotShowHideTitle(bool)));
     connect(ui->checkShowLegend, SIGNAL(clicked(bool)), this, SLOT(slotShowHideLegend(bool)));
+    connect(ui->checkStopAtEnd, SIGNAL(clicked(bool)), this, SLOT(slotSetStopAtEnd(bool)));
+    connect(ui->buttonShowX, SIGNAL(clicked()), this, SLOT(slotShowHideAxis()));
+    connect(ui->buttonShowY, SIGNAL(clicked()), this, SLOT(slotShowHideAxis()));
+    connect(ui->checkAutoscale, SIGNAL(clicked(bool)), this, SLOT(slotSetAutoscale(bool)));
     connect(ui->spinAmplitudeMin, SIGNAL(valueChanged(double)), this, SLOT(slotSetAmplitude()));
     connect(ui->spinAmplitudeMax, SIGNAL(valueChanged(double)), this, SLOT(slotSetAmplitude()));
     connect(ui->tableWaveforms, SIGNAL(currentCellChanged(int,int,int,int)),
@@ -90,17 +94,30 @@ void PlotSettings::slotSetTimeWindow(int timeWindow)
 void PlotSettings::slotSetAutoscale(bool enabled)
 {
     m_currentPlotDock->plot()->setAutoscale(enabled);
+    reloadInterface();
+}
+
+void PlotSettings::slotSetStopAtEnd(bool enabled)
+{
+    m_currentPlotDock->plot()->setStopAtEnd(enabled);
 }
 
 void PlotSettings::slotShowHideTitle(bool show)
 {
-
+    m_currentPlotDock->plot()->showTitle(show);
 }
 
 void PlotSettings::slotShowHideLegend(bool show)
 {
     m_currentPlotDock->plot()->legend->setVisible(show);
     m_currentPlotDock->plot()->replot();
+}
+
+void PlotSettings::slotShowHideAxis()
+{
+    bool showX = !ui->buttonShowX->isChecked();
+    bool showY = !ui->buttonShowY->isChecked();
+    m_currentPlotDock->plot()->showAxis(showX, showY);
 }
 
 void PlotSettings::reloadInterface()
@@ -122,14 +139,18 @@ void PlotSettings::reloadInterface()
 }
 
 void PlotSettings::updateInterface()
-{
+{   
     if(ui->comboData->count() > 0)
         ui->buttonAddWaveform->setEnabled(true);
     else
         ui->buttonAddWaveform->setEnabled(false);
 
-    if(ui->tableWaveforms->selectedItems().isEmpty())
-        ui->buttonRemoveWaveform->setEnabled(false);
-    else
+    if(ui->tableWaveforms->currentRow() >= 0)
         ui->buttonRemoveWaveform->setEnabled(true);
+    else
+        ui->buttonRemoveWaveform->setEnabled(false);
+
+    bool amplitudeEnabled = !(m_currentPlotDock->plot()->autoscale());
+    ui->spinAmplitudeMin->setEnabled(amplitudeEnabled);
+    ui->spinAmplitudeMax->setEnabled(amplitudeEnabled);
 }
