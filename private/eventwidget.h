@@ -19,6 +19,8 @@ public:
 
 private:
     Ui::EventWidget *ui;
+
+    QString insertArgsOnMessage(QString msg, QList<float> args);
 };
 
 #endif // EVENTWIDGET_H

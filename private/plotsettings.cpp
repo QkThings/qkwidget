@@ -6,6 +6,7 @@
 
 #include <QHeaderView>
 #include <QPixmap>
+#include <QFileDialog>
 
 PlotSettings::PlotSettings(QWidget *parent) :
     QWidget(parent),
@@ -47,6 +48,12 @@ void PlotSettings::setupConnections()
             this, SLOT(updateInterface()));
     connect(ui->comboData, SIGNAL(currentIndexChanged(int)),
             this, SLOT(updateInterface()));
+
+    connect(ui->buttonBrowse, SIGNAL(clicked()), this, SLOT(slotBrowseOutputFolder()));
+    connect(ui->buttonExport, SIGNAL(clicked()), this, SLOT(slotExport()));
+
+    connect(ui->lineFilename, SIGNAL(textChanged(QString)), this, SLOT(updateInterface()));
+    connect(ui->lineOutFolder, SIGNAL(textChanged(QString)), this, SLOT(updateInterface()));
 }
 
 void PlotSettings::setCurrentPlotDock(RTPlotDock *plotDock)
@@ -120,6 +127,92 @@ void PlotSettings::slotShowHideAxis()
     m_currentPlotDock->plot()->showAxis(showX, showY);
 }
 
+void PlotSettings::slotExport()
+{
+    RTPlot *plot = m_currentPlotDock->plot();
+    ExportFormat ef = (ExportFormat)ui->comboFormat->currentIndex();
+
+    int width, height;
+
+    switch(ui->comboSize->currentIndex())
+    {
+    case 0: width = 800; height = 600; break;
+    case 1: width = 1200; height = 700; break;
+    default:
+        width = ui->spinW->value(); height = ui->spinH->value();
+    }
+
+    QString output = ui->lineOutFolder->text() + "/" + ui->lineFilename->text();
+
+    switch(ef)
+    {
+    case efPDF:
+        output.append(".pdf");
+        plot->savePdf(output, true, width, height);
+        break;
+    case efPNG:
+        output.append(".png");
+        plot->savePng(output, width, height);
+        break;
+    case efCSV:
+        output.append(".csv");
+        exportToCsv(plot, output);
+    }
+}
+
+void PlotSettings::slotBrowseOutputFolder()
+{
+    ui->lineOutFolder->setText(QFileDialog::getExistingDirectory(this, tr("Export to...")));
+}
+
+void PlotSettings::exportToCsv(RTPlot *plot, const QString &outputPath)
+{
+    QFile outFile(outputPath);
+
+    if(plot->waveforms().count() == 0)
+        return;
+
+    if(!outFile.open(QFile::WriteOnly))
+    {
+        qDebug() << "Failed to open file";
+        return;
+    }
+
+    QTextStream outStream(&outFile);
+
+    int minCount=999999, maxCount=0;
+    foreach(Waveform *wf, plot->waveforms())
+    {
+        int count = wf->graph->data()->count();
+        maxCount = ((count > maxCount) ? count : maxCount);
+        minCount = ((count < minCount) ? count : minCount);
+    }
+
+    qDebug() << "maxCount" << maxCount << "minCount" << minCount;
+
+    QList<double> keys = plot->waveforms().at(0)->graph->data()->keys();
+
+
+    while(keys.count() > minCount)
+        keys.removeLast();
+
+    for(int i=0; i < keys.count(); i++)
+    {
+        double key = keys[i];
+        outStream << QString::number(key) << ",";
+        for(int j=0; j < plot->waveforms().count(); j++)
+        {
+            Waveform *wf = plot->waveforms().at(j);
+            outStream << QString::number(wf->graph->data()->value(key).value);
+            if(j < (plot->waveforms().count() - 1))
+                outStream << ",";
+        }
+        outStream << "\n";
+    }
+
+    outFile.close();
+}
+
 void PlotSettings::reloadInterface()
 {
     RTPlotDock *plotDock = m_currentPlotDock;
@@ -153,4 +246,15 @@ void PlotSettings::updateInterface()
     bool amplitudeEnabled = !(m_currentPlotDock->plot()->autoscale());
     ui->spinAmplitudeMin->setEnabled(amplitudeEnabled);
     ui->spinAmplitudeMax->setEnabled(amplitudeEnabled);
+
+    if(ui->lineFilename->text().isEmpty() || ui->lineOutFolder->text().isEmpty())
+        ui->buttonExport->setEnabled(false);
+    else
+        ui->buttonExport->setEnabled(true);
+
+    bool customSizeEnabled = (ui->comboSize->currentIndex() == (ui->comboSize->count()-1));
+    ui->labelW->setVisible(customSizeEnabled);
+    ui->labelH->setVisible(customSizeEnabled);
+    ui->spinW->setVisible(customSizeEnabled);
+    ui->spinH->setVisible(customSizeEnabled);
 }

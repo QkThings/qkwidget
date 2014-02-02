@@ -24,6 +24,8 @@ BoardPanel::BoardPanel(QWidget *parent) :
     ui->browser->setColumnHidden(BrowserColumnPopup, true);
     ui->browser->setIndentation(10);
 
+    m_board = 0;
+
     _setupConnections();
     _updateInterface();
 }
@@ -79,6 +81,7 @@ void BoardPanel::reload()
 
     if(m_board == 0) // not available
     {
+        qWarning() << __FUNCTION__ << "m_board == 0";
         //CProperty *naProp = new CProperty(tr("(not available)"), CProperty::Label);
         //browser->addProperty(naProp);
         return;
@@ -241,13 +244,17 @@ void BoardPanel::refresh()
 void BoardPanel::refreshData()
 {
     if(m_board == 0 || m_boardType != QkBoard::btDevice)
+    {
+        qWarning() << __FUNCTION__ << "m_board == 0 || m_boardType != QkBoard::btDevice";
         return;
+    }
 
     QkDevice *device = (QkDevice*) m_board;
 
     int i;
     QString valueStr;
     QVector<QkDevice::Data> data = device->data();
+
     for(i = 0; i < data.count(); i++)
     {
         if(device->dataType() == QkDevice::Data::dtInt)

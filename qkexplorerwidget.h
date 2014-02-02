@@ -61,6 +61,7 @@ private slots:
     void slotViewer_removePlot();
     void slotViewer_addWaveform();
     void slotViewer_removeWaveform();
+    void slotViewer_nodeChanged(int address);
     void slotViewer_nodeChanged(QString addrStr);
     void slotViewer_dockSelected(int id);
     void slotViewer_currentPlotChanged(int idx);
@@ -80,7 +81,8 @@ private:
     enum SelectedBoardType
     {
         sbtGatewayNetwork,
-        sbtModuleDevice
+        sbtModuleDevice,
+        sbtUnknown
     };
     enum
     {
@@ -108,8 +110,6 @@ private:
     void setupLayout();
     void setupConnections();
     int explorerList_findNode(int address);
-
-    QString insertArgsOnMessage(QString msg, QList<float> args);
 
     Ui::QkExplorerWidget *ui;
     QkConnection *m_conn;

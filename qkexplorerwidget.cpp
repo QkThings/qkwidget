@@ -46,6 +46,9 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     m_debugPrintTime = false;
     m_debugPrintSource = false;
 
+    m_selNode = 0;
+    m_selBoardType = sbtUnknown;
+
     m_commBoardPanel = ui->commBoardPanel;
     m_deviceBoardPanel = ui->deviceBoardPanel;
 
@@ -88,8 +91,10 @@ void QkExplorerWidget::setupLayout()
 {
     ui->setupUi(this);
     ui->menubar->hide();
-    //ui->statusBar->hide();
-    ui->debugText->setFont(GUI_MONOFONT);
+    ui->statusBar->hide();
+    QFont debugFont(GUI_MONOFONT);
+    debugFont.setPointSize(9);
+    ui->debugText->setFont(debugFont);
     ui->explorerTabs->setCurrentIndex(0);
 
     setWindowTitle("Explorer");
@@ -162,6 +167,7 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
     {
         qk = m_conn->qk();
         disconnect(qk, SIGNAL(error(int,int)), this, SLOT(showError(int,int)));
+        disconnect(qk, SIGNAL(infoChanged(int,QkBoard::Type,int)), this, SLOT(slotNodeUpdated(int)));
         disconnect(qk, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
         disconnect(qk, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
         disconnect(qk, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
@@ -174,6 +180,7 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
     m_conn = conn;
     qk = m_conn->qk();
     connect(qk, SIGNAL(error(int,int)), this, SLOT(showError(int,int)));
+    connect(qk, SIGNAL(infoChanged(int,QkBoard::Type,int)), this, SLOT(slotNodeUpdated(int)));
     connect(qk, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
     connect(qk, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
     connect(qk, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
@@ -214,10 +221,16 @@ void QkExplorerWidget::slotExplorerListRowChanged(int row)
 
 void QkExplorerWidget::slotDataReceived(int address)
 {
-    //qDebug() << "slotDataReceived()";
     if(m_selNode != 0 && m_selNode->address() == address)
     {
         ui->deviceBoardPanel->refreshData();
+    }
+
+    QkNode *node = m_conn->qk()->node(address);
+    if(node == 0 || node->device() == 0)
+    {
+        qWarning() << __FUNCTION__ << "node == 0 || node->device() == 0";
+        return;
     }
 
     foreach(AddressDataPair *addrDataPair, m_waveformMapper.keys())
@@ -234,7 +247,7 @@ void QkExplorerWidget::slotDataReceived(int address)
 
 void QkExplorerWidget::slotNodeFound(int address)
 {
-    qDebug() << "slotNodeFound()";
+    qDebug() << __FUNCTION__;
 
     QString addrStr = QString().sprintf("%04X", address);
 
@@ -252,21 +265,25 @@ void QkExplorerWidget::slotNodeFound(int address)
 
 void QkExplorerWidget::slotNodeUpdated(int address)
 {
+    qDebug() << __FUNCTION__;
+
     if(m_selBoardType == sbtModuleDevice)
     {
         if(m_selNode != 0 && m_selNode->address() == address)
             slotBoardPanels_reload();
+
+        slotViewer_nodeChanged(address);
     }
 }
 
 void QkExplorerWidget::slotExplorerList_reload() //FIXME is it really needed?
 {
-    ui->explorerList->clear();
-    QList<int> addressList = m_conn->qk()->nodes().keys();
-    foreach(int address, addressList)
-    {
-        slotNodeFound(address);
-    }
+//    ui->explorerList->clear();
+//    QList<int> addressList = m_conn->qk()->nodes().keys();
+//    foreach(int address, addressList)
+//    {
+//        slotNodeFound(address);
+//    }
 }
 
 void QkExplorerWidget::slotBoardPanels_reload()
@@ -354,7 +371,19 @@ void QkExplorerWidget::slotConnect()
         }
         ui->statusBar->showMessage(tr("Connecting"));
         if(m_conn->open())
+        {
             ui->statusBar->showMessage(tr("Connected"), 1000);
+//            ui->statusBar->showMessage(tr("Searching..."));
+//            QTimer timer;
+//            QEventLoop eventLoop;
+//            timer.setInterval(2000);
+//            timer.setSingleShot(true);
+//            connect(&timer, SIGNAL(timeout()), &eventLoop, SLOT(quit()));
+//            timer.start();
+//            eventLoop.exec();
+//            m_conn->qk()->search();
+//            ui->statusBar->showMessage(tr("Done"));
+        }
         else
             ui->statusBar->clearMessage();
     }
@@ -376,38 +405,22 @@ void QkExplorerWidget::slotSearch()
 void QkExplorerWidget::slotStart()
 {
     m_conn->qk()->start();
+    updateInterface();
     foreach(RTPlotDock *plotDock, m_plotDockMapper.values())
         plotDock->plot()->start();
-
-    ui->status_label->setText(tr("Running"));
-
-    QString style = "QLabel { background: #00b460; color: white; padding: 2px;}";
-    ui->status_label->setStyleSheet(style);
 }
 
 void QkExplorerWidget::slotStop()
 {
     m_conn->qk()->stop();
+    updateInterface();
     foreach(RTPlotDock *plotDock, m_plotDockMapper.values())
         plotDock->plot()->stop();
-
-    ui->status_label->setText(tr("Stopped"));
-
-    QString style = "QLabel { background: #eb7d7d; color: white; padding: 2px;}";
-    ui->status_label->setStyleSheet(style);
 }
 
 void QkExplorerWidget::slotClear()
 {
     ui->debugText->clear();
-}
-
-QString QkExplorerWidget::insertArgsOnMessage(QString msg, QList<float> args)
-{
-    for(int i=0; i<args.count(); i++)
-        msg.replace(QRegularExpression("\\%" + QString::number(i)), QString::number(args[i]));
-
-    return msg;
 }
 
 void QkExplorerWidget::updateInterface()
@@ -440,15 +453,44 @@ void QkExplorerWidget::updateInterface()
     if(connected)
     {
         ui->buttonConnect->setText(tr("Connected"));
-        ui->buttonConnect->setPalette(QPalette(QColor("#b5eaa5")));
+        QPalette buttonPalette(QColor("#00b460"));
+        //buttonPalette.setColor(ui->buttonConnect->foregroundRole(), Qt::white);
+        ui->buttonConnect->setPalette(buttonPalette);
         ui->comboPort->setDisabled(true);
+        ui->buttonReloadSerialPorts->setDisabled(true);
     }
     else
     {
         ui->buttonConnect->setText(tr("Disconnected"));
-        ui->buttonConnect->setPalette(QPalette(QColor("#f8c3c2")));
+        QPalette buttonPalette(QColor("#ef6565"));
+        //buttonPalette.setColor(ui->buttonConnect->foregroundRole(), Qt::white);
+        ui->buttonConnect->setPalette(buttonPalette);
         ui->comboPort->setDisabled(false);
+        ui->buttonReloadSerialPorts->setDisabled(false);
     }
+
+    if(m_conn != 0)
+    {
+        if(!m_conn->isConnected())
+            ui->status_label->setVisible(false);
+        else
+        {
+            if(m_conn->qk()->isRunning())
+            {
+                ui->status_label->setText(tr("Running"));
+                QString style = "QLabel { background: #00b460; color: white; padding: 2px;}";
+                ui->status_label->setStyleSheet(style);
+            }
+            else
+            {
+                ui->status_label->setText(tr("Stopped"));
+                QString style = "QLabel { background: #ef6565; color: white; padding: 2px;}";
+                ui->status_label->setStyleSheet(style);
+            }
+            ui->status_label->setVisible(true);
+        }
+    }
+
 }
 
 void QkExplorerWidget::slotDebug_log(int address, QString debugStr)
@@ -467,8 +509,8 @@ void QkExplorerWidget::slotDebug_log(int address, QString debugStr)
 
 void QkExplorerWidget::slotDebug_updateOptions()
 {
-    m_debugPrintTime = ui->debugSettings->ui->checkTimestamp;
-    m_debugPrintSource = ui->debugSettings->ui->checkSource;
+    m_debugPrintTime = ui->debugSettings->ui->checkTimestamp->isChecked();
+    m_debugPrintSource = ui->debugSettings->ui->checkSource->isChecked();
 }
 
 void QkExplorerWidget::slotDebug_setEnabled(bool enabled)
@@ -587,15 +629,22 @@ void QkExplorerWidget::slotViewer_removeWaveform()
     table->removeRow(row);
 }
 
-void QkExplorerWidget::slotViewer_nodeChanged(QString addrStr)
+void QkExplorerWidget::slotViewer_nodeChanged(int address)
 {
+    qDebug() << __FUNCTION__;
     PlotSettings *plotSettings = ui->plotSettings;
-    bool ok;
-    int addr = addrStr.toInt(&ok, 16);
-    QkNode *node = m_conn->qk()->node(addr);
+
+    QkNode *node = m_conn->qk()->node(address);
     plotSettings->ui->comboData->clear();
     foreach(QkDevice::Data data, node->device()->data())
         plotSettings->ui->comboData->addItem(data.label());
+}
+
+void QkExplorerWidget::slotViewer_nodeChanged(QString addrStr)
+{
+    bool ok;
+    int addr = addrStr.toInt(&ok, 16);
+    slotViewer_nodeChanged(addr);
 }
 
 void QkExplorerWidget::slotViewer_dockSelected(int  id)

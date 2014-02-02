@@ -35,6 +35,8 @@ public slots:
     void slotShowHideTitle(bool show);
     void slotShowHideLegend(bool show);
     void slotShowHideAxis();
+    void slotExport();
+    void slotBrowseOutputFolder();
     void reloadInterface();
     void updateInterface();
 
@@ -42,9 +44,16 @@ public:
     Ui::PlotSettings *ui;
 
 private:
+    enum ExportFormat
+    {
+        efPNG,
+        efPDF,
+        efCSV
+    };
 
     void setupConnections();
     void addWaveformToTable(Waveform *wf);
+    void exportToCsv(RTPlot *plot, const QString &outputPath);
 
     RTPlotDock *m_currentPlotDock;
 };
