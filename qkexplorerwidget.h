@@ -38,6 +38,7 @@ public slots:
 
 private slots:
     void slotReloadSerialPorts();
+    void slotSetSerialPortName();
     void slotConnect();
     void slotSearch();
     void slotStart();

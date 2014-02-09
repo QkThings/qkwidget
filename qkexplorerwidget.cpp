@@ -46,6 +46,8 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     m_debugPrintTime = false;
     m_debugPrintSource = false;
 
+    m_modeFlags = 0;
+
     m_selNode = 0;
     m_selBoardType = sbtUnknown;
 
@@ -97,7 +99,7 @@ void QkExplorerWidget::setupLayout()
     ui->debugText->setFont(debugFont);
     ui->explorerTabs->setCurrentIndex(0);
 
-    setWindowTitle("Explorer");
+    setWindowTitle("qkexplorer");
     updateInterface();
 }
 
@@ -107,6 +109,9 @@ void QkExplorerWidget::setupConnections()
             this, SLOT(slotReloadSerialPorts()));
     connect(ui->buttonConnect, SIGNAL(clicked()),
             this, SLOT(slotConnect()));
+
+    connect(ui->comboPort, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(slotSetSerialPortName()));
 
     connect(ui->search_button, SIGNAL(clicked()),
             this, SLOT(slotSearch()));
@@ -162,6 +167,12 @@ void QkExplorerWidget::setupConnections()
 
 void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
 {
+    if(conn == 0)
+    {
+        qDebug() << __FUNCTION__ << "conn == 0";
+        return;
+    }
+
     QkCore *qk;
     if(m_conn != 0)
     {
@@ -247,8 +258,6 @@ void QkExplorerWidget::slotDataReceived(int address)
 
 void QkExplorerWidget::slotNodeFound(int address)
 {
-    qDebug() << __FUNCTION__;
-
     QString addrStr = QString().sprintf("%04X", address);
 
     if(explorerList_findNode(address) < 0)
@@ -344,6 +353,19 @@ void QkExplorerWidget::slotReloadSerialPorts()
     ui->comboPort->addItems(list);
 }
 
+void QkExplorerWidget::slotSetSerialPortName()
+{
+    if(ui->comboPort->currentIndex() >= 0)
+    {
+        QString portName = ui->comboPort->currentText();
+        if(portName != "" && m_conn != 0)
+        {
+            QkSerialConnection *serialConn = (QkSerialConnection*)m_conn;
+            serialConn->setPortName(portName);
+        }
+    }
+}
+
 void QkExplorerWidget::slotConnect()
 {
 //    qDebug() << "slotConnect()";
@@ -421,76 +443,6 @@ void QkExplorerWidget::slotStop()
 void QkExplorerWidget::slotClear()
 {
     ui->debugText->clear();
-}
-
-void QkExplorerWidget::updateInterface()
-{
-    bool enableButtons = (m_conn != 0 && m_conn->isConnected() ? true : false);
-    ui->search_button->setEnabled(enableButtons);
-    ui->start_button->setEnabled(enableButtons);
-    ui->stop_button->setEnabled(enableButtons);
-
-    bool nothingToShow;
-    if(ui->explorerList->count() == 0)
-        nothingToShow = true;
-    else
-        nothingToShow = false;
-
-    ui->label->setHidden(nothingToShow);
-    ui->explorerList->setHidden(nothingToShow);
-
-    bool removePlotEnabled = (ui->viewer_comboPlot->count() > 1);
-    ui->viewer_buttonRemovePlot->setEnabled(removePlotEnabled);
-
-    bool modeSingleConnection = (m_modeFlags | mfSingleConnection ? true : false);
-
-    bool modeSingleNode = (m_modeFlags | mfSingleNode ? true : false);
-    ui->plotSettings->ui->comboNode->setHidden(modeSingleNode);
-    ui->label->setHidden(modeSingleNode);
-    ui->explorerList->setHidden(modeSingleNode);
-
-    bool connected = (m_conn != 0 && m_conn->isConnected() ? true : false);
-    if(connected)
-    {
-        ui->buttonConnect->setText(tr("Connected"));
-        QPalette buttonPalette(QColor("#00b460"));
-        //buttonPalette.setColor(ui->buttonConnect->foregroundRole(), Qt::white);
-        ui->buttonConnect->setPalette(buttonPalette);
-        ui->comboPort->setDisabled(true);
-        ui->buttonReloadSerialPorts->setDisabled(true);
-    }
-    else
-    {
-        ui->buttonConnect->setText(tr("Disconnected"));
-        QPalette buttonPalette(QColor("#ef6565"));
-        //buttonPalette.setColor(ui->buttonConnect->foregroundRole(), Qt::white);
-        ui->buttonConnect->setPalette(buttonPalette);
-        ui->comboPort->setDisabled(false);
-        ui->buttonReloadSerialPorts->setDisabled(false);
-    }
-
-    if(m_conn != 0)
-    {
-        if(!m_conn->isConnected())
-            ui->status_label->setVisible(false);
-        else
-        {
-            if(m_conn->qk()->isRunning())
-            {
-                ui->status_label->setText(tr("Running"));
-                QString style = "QLabel { background: #00b460; color: white; padding: 2px;}";
-                ui->status_label->setStyleSheet(style);
-            }
-            else
-            {
-                ui->status_label->setText(tr("Stopped"));
-                QString style = "QLabel { background: #ef6565; color: white; padding: 2px;}";
-                ui->status_label->setStyleSheet(style);
-            }
-            ui->status_label->setVisible(true);
-        }
-    }
-
 }
 
 void QkExplorerWidget::slotDebug_log(int address, QString debugStr)
@@ -631,7 +583,6 @@ void QkExplorerWidget::slotViewer_removeWaveform()
 
 void QkExplorerWidget::slotViewer_nodeChanged(int address)
 {
-    qDebug() << __FUNCTION__;
     PlotSettings *plotSettings = ui->plotSettings;
 
     QkNode *node = m_conn->qk()->node(address);
@@ -689,6 +640,82 @@ RTPlotDock *QkExplorerWidget::createPlotDock()
     connect(plotDock, SIGNAL(titleChanged(int,QString)), this, SLOT(slotViewer_plotTitleChanged(int,QString)));
     m_plotDockMapper.insert(plotDock->id(), plotDock);
     return plotDock;
+}
+
+void QkExplorerWidget::updateInterface()
+{
+    bool enableButtons = (m_conn != 0 && m_conn->isConnected() ? true : false);
+    ui->search_button->setEnabled(enableButtons);
+    ui->start_button->setEnabled(enableButtons);
+    ui->stop_button->setEnabled(enableButtons);
+
+    bool removePlotEnabled = (ui->viewer_comboPlot->count() > 1);
+    ui->viewer_buttonRemovePlot->setEnabled(removePlotEnabled);
+
+    bool modeSingleConnection = ((m_modeFlags & mfSingleConnection) ? true : false);
+    ui->buttonReloadSerialPorts->setVisible(modeSingleConnection);
+    ui->comboPort->setVisible(modeSingleConnection);
+    ui->buttonConnect->setVisible(modeSingleConnection);
+
+    bool modeSingleNode = ((m_modeFlags & mfSingleNode) ? true : false);
+    ui->plotSettings->ui->comboNode->setVisible(!modeSingleNode);
+
+    if(modeSingleNode)
+    {
+        ui->label->setHidden(modeSingleNode);
+        ui->explorerList->setHidden(modeSingleNode);
+    }
+    else
+    {
+        bool nothingToShow;
+        if(ui->explorerList->count() == 0)
+            nothingToShow = true;
+        else
+            nothingToShow = false;
+        ui->label->setHidden(nothingToShow);
+        ui->explorerList->setHidden(nothingToShow);
+    }
+
+    bool connected = (m_conn != 0 && m_conn->isConnected() ? true : false);
+    if(connected)
+    {
+        ui->buttonConnect->setText(tr("Connected"));
+        QPalette buttonPalette(QColor("#00b460"));
+        ui->buttonConnect->setPalette(buttonPalette);
+        ui->comboPort->setDisabled(true);
+        ui->buttonReloadSerialPorts->setDisabled(true);
+    }
+    else
+    {
+        ui->buttonConnect->setText(tr("Disconnected"));
+        QPalette buttonPalette(QColor("#ef6565"));
+        ui->buttonConnect->setPalette(buttonPalette);
+        ui->comboPort->setDisabled(false);
+        ui->buttonReloadSerialPorts->setDisabled(false);
+    }
+
+    if(m_conn != 0)
+    {
+        if(!m_conn->isConnected())
+            ui->status_label->setVisible(false);
+        else
+        {
+            if(m_conn->qk()->isRunning())
+            {
+                ui->status_label->setText(tr("Running"));
+                QString style = "QLabel { background: #00b460; color: white; padding: 2px;}";
+                ui->status_label->setStyleSheet(style);
+            }
+            else
+            {
+                ui->status_label->setText(tr("Stopped"));
+                QString style = "QLabel { background: #ef6565; color: white; padding: 2px;}";
+                ui->status_label->setStyleSheet(style);
+            }
+            ui->status_label->setVisible(true);
+        }
+    }
+
 }
 
 void QkExplorerWidget::showError(int code, int arg)

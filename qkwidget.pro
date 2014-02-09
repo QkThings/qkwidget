@@ -12,6 +12,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport
 TARGET = qkwidget
 TEMPLATE = lib
 
+DEFINES += QT_NO_DEBUG_OUTPUT
+
 DEFINES += QKWIDGET_LIBRARY
 
 INCLUDEPATH += private
@@ -76,9 +78,9 @@ FORMS += \
     private/plotsettings.ui
 
 RESOURCES += \
-    resources/icons/icons.qrc \
-    resources/img/img.qrc \
-    resources/fonts/fonts.qrc
+    resources/fonts/qkwidget_fonts.qrc \
+    resources/icons/qkwidget_icons.qrc \
+    resources/img/qkwidget_img.qrc
 
 
 CONFIG(debug, debug|release) {

@@ -81,9 +81,7 @@ void BoardPanel::reload()
 
     if(m_board == 0) // not available
     {
-        qWarning() << __FUNCTION__ << "m_board == 0";
-        //CProperty *naProp = new CProperty(tr("(not available)"), CProperty::Label);
-        //browser->addProperty(naProp);
+        qDebug() << __FUNCTION__ << "m_board == 0";
         return;
     }
 

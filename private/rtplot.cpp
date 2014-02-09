@@ -296,7 +296,8 @@ void RTPlot::showTitle(bool show)
     }
     else
     {
-        if(plotLayout()->hasElement(0,0)) {
+        if(plotLayout()->hasElement(0,0))
+        {
             plotLayout()->take(m_title);
             plotLayout()->simplify();
         }
