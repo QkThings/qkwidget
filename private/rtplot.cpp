@@ -72,7 +72,7 @@ void RTPlot::_setup()
                     QCP::iSelectLegend);
 
     m_title = new QCPPlotTitle(this, "Interaction Example");
-    m_title->setFont(QFont("OpenSans-Regular",12));
+    m_title->setFont(QFont("Ubuntu-R",11));
 
     //plotLayout()->insertRow(0);
     //plotLayout()->setRowStretchFactor(0, 0.0);

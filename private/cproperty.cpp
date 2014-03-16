@@ -16,6 +16,8 @@
 #include <QIcon>
 #include <QApplication>
 #include <QLabel>
+#include <QToolButton>
+#include <QHBoxLayout>
 
 CProperty::CProperty(QString label, Type type, CProperty *top) :
     QObject(top),
@@ -106,6 +108,20 @@ CProperty::CProperty(QString label, Type type, CProperty *top) :
         m_valueWidget = edit;
     }
 
+    m_multiFunctionButton = new QToolButton();
+    m_multiFunctionButton->hide();
+
+    m_mainWidget = new QWidget();
+
+    const int maxHeight = 18;
+    m_valueWidget->setFixedHeight(maxHeight);
+    m_multiFunctionButton->setFixedHeight(maxHeight);
+
+    m_mainWidget->setLayout(new QHBoxLayout);
+    m_mainWidget->layout()->setMargin(0);
+    m_mainWidget->layout()->setSpacing(0);
+    m_mainWidget->layout()->addWidget(m_valueWidget);
+    m_mainWidget->layout()->addWidget(m_multiFunctionButton);
 }
 
 CProperty::~CProperty()
@@ -209,6 +225,20 @@ void CProperty::setEnumList(QStringList list)
     }
 }
 
+void CProperty::setUserData(QVariant data)
+{
+    m_userData = data;
+}
+
+QVariant CProperty::userData()
+{
+    return m_userData;
+}
+
+QToolButton* CProperty::multiFunctionButton()
+{
+    return m_multiFunctionButton;
+}
 
 CProperty::Type CProperty::type()
 {
@@ -280,8 +310,7 @@ QVariant CProperty::value()
 
 QWidget* CProperty::widget()
 {
-    m_valueWidget->setFixedHeight(18);
-    return m_valueWidget;
+    return m_mainWidget;
 }
 
 pTreeItemProperty* CProperty::item()

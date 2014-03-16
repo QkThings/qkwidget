@@ -48,6 +48,8 @@ void PlotSettings::setupConnections()
             this, SLOT(updateInterface()));
     connect(ui->comboData, SIGNAL(currentIndexChanged(int)),
             this, SLOT(updateInterface()));
+    connect(ui->comboSize, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(updateInterface()));
 
     connect(ui->buttonBrowse, SIGNAL(clicked()), this, SLOT(slotBrowseOutputFolder()));
     connect(ui->buttonExport, SIGNAL(clicked()), this, SLOT(slotExport()));

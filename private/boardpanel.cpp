@@ -46,7 +46,7 @@ void BoardPanel::setBoard(QkBoard *board, QkBoard::Type type, QkConnection *conn
     switch(type)
     {
     case QkBoard::btDevice: ui->pixmap->setPixmap(QPixmap(":/img/device_text_color.png")); break;
-    case QkBoard::btModule: ui->pixmap->setPixmap(QPixmap(":/img/comm_text_color.png")); break;
+    case QkBoard::btComm: ui->pixmap->setPixmap(QPixmap(":/img/comm_text_color.png")); break;
     default: ;
     }
 
@@ -74,6 +74,7 @@ void BoardPanel::setBoard(QkBoard *board, QkBoard::Type type, QkConnection *conn
 
 void BoardPanel::reload()
 {
+    qDebug() << __FUNCTION__;
     CPropertyBrowser *browser = ui->browser;
     QkDevice *device = 0;
 
@@ -105,7 +106,7 @@ void BoardPanel::reload()
     browser->addProperty(m_boardProp.configs);
     m_boardProp.configs->item()->setExpanded(true);
 
-
+    int config_id = 0;
     m_boardProp.configsList.clear();
     foreach(QkBoard::Config config, m_board->configs())
     {
@@ -135,12 +136,14 @@ void BoardPanel::reload()
         }
 
         CProperty *configProp = new CProperty(config.label(), propType, m_boardProp.configs);
+        configProp->setUserData(QVariant(config_id++));
         configProp->setValue(config.value());
         browser->addProperty(configProp, m_boardProp.configs);
         m_boardProp.configsList.append(configProp);
     }
 
-    if(m_boardType)
+
+    if(m_boardType == QkBoard::btDevice)
     {
         device = (QkDevice*) m_board;
 
@@ -174,10 +177,12 @@ void BoardPanel::reload()
         browser->addProperty(m_deviceProp.data);
         m_deviceProp.data->item()->setExpanded(true);
 
+        int data_id = 0;
         m_deviceProp.dataList.clear();
         foreach(QkDevice::Data data, device->data())
         {
             CProperty *dataProp = new CProperty(data.label(), CProperty::Label, m_deviceProp.data);
+            dataProp->setUserData(QVariant(data_id++));
             dataProp->setValue(data.value());
             browser->addProperty(dataProp, m_deviceProp.data);
             m_deviceProp.dataList.append(dataProp);
@@ -187,14 +192,43 @@ void BoardPanel::reload()
         browser->addProperty(m_deviceProp.actions);
         m_deviceProp.actions->item()->setExpanded(true);
 
+        int action_id = 0;
+        m_deviceProp.actionsList.clear();
+        foreach(QkDevice::Action action, device->actions())
+        {
+            CProperty::Type propType;
+            switch(action.type())
+            {
+            case QkDevice::Action::atBool:
+                propType = CProperty::Bool;
+                break;
+            case QkDevice::Action::atInt:
+                propType = CProperty::Int;
+                break;
+            default:
+                propType = CProperty::Label;
+            }
+
+            CProperty *actionProp = new CProperty(action.label(), propType, m_deviceProp.actions);
+            actionProp->setUserData(QVariant(action_id++));
+            actionProp->setValue(action.value());
+            browser->addProperty(actionProp, m_deviceProp.actions);
+            m_deviceProp.actionsList.append(actionProp);
+
+            connect(actionProp, SIGNAL(valueChanged(CProperty*)), this, SLOT(_slotActionValueChanged(CProperty*)));
+
+        }
+
         m_deviceProp.events = new CProperty("Events", CProperty::Label);
         browser->addProperty(m_deviceProp.events);
         m_deviceProp.events->item()->setExpanded(true);
 
+        int event_id = 0;
         m_deviceProp.eventsList.clear();
         foreach(QkDevice::Event event, device->events())
         {
             CProperty *eventProp = new CProperty(event.label(), CProperty::Label, m_deviceProp.events);
+            eventProp->setUserData(QVariant(event_id++));
             browser->addProperty(eventProp, m_deviceProp.events);
             m_deviceProp.eventsList.append(eventProp);
         }
@@ -261,6 +295,19 @@ void BoardPanel::refreshData()
             valueStr = QString().sprintf("% .6f", data[i].value());
         m_deviceProp.dataList[i]->setValue(valueStr);
     }
+}
+
+void BoardPanel::_slotActionValueChanged(CProperty *prop)
+{
+    if(m_board == 0) return;
+
+    int action_id = prop->userData().toInt();
+
+    qDebug() << "value of action" << prop->userData().toInt() << "changed";
+
+    QkDevice *device = (QkDevice*) m_board;
+
+    device->actuate(action_id, prop->value());
 }
 
 void BoardPanel::_slotSamplingModeChanged()

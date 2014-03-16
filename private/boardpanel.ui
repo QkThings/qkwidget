@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>575</width>
-    <height>234</height>
+    <width>751</width>
+    <height>317</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,6 +24,9 @@ border-radius: 20px; border: 1px solid #bbb;
 }</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_4">
+   <property name="spacing">
+    <number>1</number>
+   </property>
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -37,7 +40,7 @@ border-radius: 20px; border: 1px solid #bbb;
     <number>0</number>
    </property>
    <item>
-    <widget class="QWidget" name="widget" native="true">
+    <widget class="QWidget" name="panel" native="true">
      <property name="minimumSize">
       <size>
        <width>200</width>
@@ -49,6 +52,12 @@ border-radius: 20px; border: 1px solid #bbb;
        <width>200</width>
        <height>16777215</height>
       </size>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QWidget
+{
+background-color: white;
+}</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
@@ -89,7 +98,7 @@ border-radius: 20px; border: 1px solid #bbb;
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap resource="../resources/img/img.qrc">:/img/comm_text_color.png</pixmap>
+               <pixmap>:/img/comm_text_color.png</pixmap>
               </property>
              </widget>
             </item>
@@ -316,8 +325,6 @@ border-radius: 20px; border: 1px solid #bbb;
    <header>cpropertybrowser.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../resources/img/img.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

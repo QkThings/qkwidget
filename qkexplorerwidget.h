@@ -18,6 +18,8 @@ class RTPlot;
 class Waveform;
 class BoardPanel;
 
+class QTextEdit;
+
 class QkExplorerWidget : public QMainWindow
 {
     Q_OBJECT
@@ -44,14 +46,16 @@ private slots:
     void slotStart();
     void slotStop();
     void slotClear();
+    void slotBoardTypeChanged();
     void slotBoardPanels_reload();
-    void slotExplorerList_reload();
+    //void slotExplorerList_reload();
     void slotNodeFound(int address);
     void slotExplorerListRowChanged(int row);
     void slotDataReceived(int address);
     void slotNodeUpdated(int address);
 
     void slotLogger_append(int address, QkDevice::Event event);
+    void slotLogger_append(int address);
     void slotLogger_setEnabled(bool enabled);
 
     void slotDebug_log(int address, QString debugStr);
@@ -127,8 +131,13 @@ private:
     bool m_debugPrintTime;
     bool m_debugPrintSource;
 
+    QQueue<QkDevice::Event> m_loggerEventQueue;
+
     BoardPanel *m_commBoardPanel;
     BoardPanel *m_deviceBoardPanel;
+
+    QMainWindow *m_outputWindow;
+    QTextEdit *m_outputText;
 };
 
 #endif // QKEXPLORERWIDGET_H

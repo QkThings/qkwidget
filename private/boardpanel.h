@@ -26,6 +26,7 @@ public:
     void refreshData();
 
 private slots:
+    void _slotActionValueChanged(CProperty *prop);
     void _slotSamplingModeChanged();
     void _slotUpdate();
     void _slotSave();
@@ -71,7 +72,7 @@ private:
         CProperty *data;
         QList<CProperty*> dataList;
         CProperty *actions;
-        //QList<CProperty*> actionsList;
+        QList<CProperty*> actionsList;
         CProperty *events;
         QList<CProperty*> eventsList;
     };

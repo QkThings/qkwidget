@@ -51,12 +51,19 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     m_selNode = 0;
     m_selBoardType = sbtUnknown;
 
-    m_commBoardPanel = ui->commBoardPanel;
-    m_deviceBoardPanel = ui->deviceBoardPanel;
-
     QFontDatabase::addApplicationFont("://fonts/Ubuntu-R.ttf");
     QFontDatabase::addApplicationFont("://fonts/OpenSans-Regular.ttf");
     QFontDatabase::addApplicationFont("://fonts/PTSans.ttf");
+
+    m_outputWindow = new QMainWindow(this);
+    m_outputWindow->setWindowTitle(tr("Messages"));
+    m_outputText = new QTextEdit(m_outputWindow);
+    m_outputText->setFont(GUI_MONOFONT);
+    m_outputText->setReadOnly(true);
+    //m_outputText->setWordWrapMode(QTextOption::NoWrap);
+    m_outputWindow->setCentralWidget(m_outputText);
+    m_outputWindow->setMinimumWidth(500);
+    m_outputWindow->hide();
 
     setupLayout();
     setupConnections();
@@ -72,9 +79,6 @@ QkExplorerWidget::~QkExplorerWidget()
 void QkExplorerWidget::setModeFlags(int flags)
 {
     m_modeFlags = flags;
-
-    if(m_modeFlags | mfSingleNode)
-        ui->nodeTabWidget->removeTab(0); //FIXME how recover this tab?
 
     updateInterface();
 }
@@ -98,6 +102,7 @@ void QkExplorerWidget::setupLayout()
     debugFont.setPointSize(9);
     ui->debugText->setFont(debugFont);
     ui->explorerTabs->setCurrentIndex(0);
+    ui->stackedWidget->setCurrentIndex(0);
 
     setWindowTitle("qkexplorer");
     updateInterface();
@@ -125,8 +130,10 @@ void QkExplorerWidget::setupConnections()
 
     connect(ui->explorerList, SIGNAL(currentRowChanged(int)),
             this, SLOT(slotExplorerListRowChanged(int)));
-    connect(ui->explorerList, SIGNAL(currentRowChanged(int)),
-            this, SLOT(slotBoardPanels_reload()));
+    /*connect(ui->explorerList, SIGNAL(currentRowChanged(int)),
+            this, SLOT(slotBoardPanels_reload()));*/
+    connect(ui->comboBoardType, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(slotBoardTypeChanged()));
 
     connect(ui->logger_buttonSettings, SIGNAL(clicked(bool)), ui->loggerSettings, SLOT(setVisible(bool)));
     connect(ui->loggerSettings->ui->buttonClear, SIGNAL(clicked()),
@@ -182,8 +189,10 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
         disconnect(qk, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
         disconnect(qk, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
         disconnect(qk, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
-        disconnect(qk, SIGNAL(eventReceived(int,QkDevice::Event)), this, SLOT(slotLogger_append(int,QkDevice::Event)));
+        //disconnect(qk, SIGNAL(eventReceived(int,QkDevice::Event)), this, SLOT(slotLogger_append(int,QkDevice::Event)));
+        disconnect(qk, SIGNAL(eventReceived(int)), this, SLOT(slotLogger_append(int)));
         disconnect(qk, SIGNAL(debugString(int,QString)), this, SLOT(slotDebug_log(int,QString)));
+
         disconnect(m_conn, SIGNAL(connected()), this, SLOT(updateInterface()));
         disconnect(m_conn, SIGNAL(disconnected()), this, SLOT(updateInterface()));
     }
@@ -195,8 +204,10 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
     connect(qk, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
     connect(qk, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
     connect(qk, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
-    connect(qk, SIGNAL(eventReceived(int,QkDevice::Event)), this, SLOT(slotLogger_append(int,QkDevice::Event)));
+    //connect(qk, SIGNAL(eventReceived(int,QkDevice::Event)), this, SLOT(slotLogger_append(int,QkDevice::Event)));
+    connect(qk, SIGNAL(eventReceived(int)), this, SLOT(slotLogger_append(int)));
     connect(qk, SIGNAL(debugString(int,QString)), this, SLOT(slotDebug_log(int,QString)));
+
     connect(m_conn, SIGNAL(connected()), this, SLOT(updateInterface()));
     connect(m_conn, SIGNAL(disconnected()), this, SLOT(updateInterface()));
 
@@ -208,7 +219,6 @@ void QkExplorerWidget::slotExplorerListRowChanged(int row)
     if(row < 0)
     {
         m_selNode = 0;
-        ui->stackedPanels->setCurrentIndex(spiNone);
         return;
     }
     QString itemText = ui->explorerList->item(row)->text();
@@ -219,7 +229,12 @@ void QkExplorerWidget::slotExplorerListRowChanged(int row)
         QString addrStr = itemText.split(' ').at(1);
         int addr = addrStr.toInt(&ok, 16);
         m_selNode = m_conn->qk()->node(addr);
-        ui->stackedPanels->setCurrentIndex(spiNode);
+
+        ui->comboBoardType->clear();
+        if(m_selNode->module() != 0)
+            ui->comboBoardType->addItem("Comm");
+        if(m_selNode->device() != 0)
+            ui->comboBoardType->addItem("Device");
     }
     else
     {
@@ -234,7 +249,7 @@ void QkExplorerWidget::slotDataReceived(int address)
 {
     if(m_selNode != 0 && m_selNode->address() == address)
     {
-        ui->deviceBoardPanel->refreshData();
+        ui->boardPanel->refreshData();
     }
 
     QkNode *node = m_conn->qk()->node(address);
@@ -267,6 +282,9 @@ void QkExplorerWidget::slotNodeFound(int address)
             ui->explorerList->setCurrentRow(0);
     }
 
+    if(ui->explorerList->count() > 0 && ui->stackedWidget->currentIndex() == 0)
+        ui->stackedWidget->setCurrentIndex(1);
+
     PlotSettings *plotSettings = ui->plotSettings;
     plotSettings->ui->comboNode->addItem(addrStr);
 }
@@ -285,14 +303,19 @@ void QkExplorerWidget::slotNodeUpdated(int address)
     }
 }
 
-void QkExplorerWidget::slotExplorerList_reload() //FIXME is it really needed?
+void QkExplorerWidget::slotBoardTypeChanged()
 {
-//    ui->explorerList->clear();
-//    QList<int> addressList = m_conn->qk()->nodes().keys();
-//    foreach(int address, addressList)
-//    {
-//        slotNodeFound(address);
-//    }
+    if(m_selNode == 0)
+        return;
+    if(m_selBoardType == sbtModuleDevice)
+    {
+        if(ui->comboBoardType->currentText().toLower() == "comm")
+            ui->boardPanel->setBoard(m_selNode->module(), QkBoard::btComm, m_conn);
+        else if(ui->comboBoardType->currentText().toLower() == "device")
+            ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
+    }
+    ui->boardPanel->reload();
+    ui->boardPanel->refresh();
 }
 
 void QkExplorerWidget::slotBoardPanels_reload()
@@ -305,18 +328,9 @@ void QkExplorerWidget::slotBoardPanels_reload()
         if(m_selNode == 0)
             return;
 
-        ui->commBoardPanel->setBoard(m_selNode->module(), QkBoard::btModule, m_conn);
-        ui->commBoardPanel->reload();
-        ui->commBoardPanel->refresh();
-
-        ui->deviceBoardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
-        ui->deviceBoardPanel->reload();
-        ui->deviceBoardPanel->refresh();
-
-        if(m_selNode->device() != 0)
-            ui->nodeTabWidget->setCurrentIndex(1);
-        else
-            ui->nodeTabWidget->setCurrentIndex(0);
+        ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
+        ui->boardPanel->reload();
+        ui->boardPanel->refresh();
     }
 }
 
@@ -391,20 +405,12 @@ void QkExplorerWidget::slotConnect()
             serialConn->setBaudRate(38400);
             serialConn->setPortName(ui->comboPort->currentText());
         }
+        qDebug() << "connecting...";
         ui->statusBar->showMessage(tr("Connecting"));
         if(m_conn->open())
         {
+            qDebug() << "connected";
             ui->statusBar->showMessage(tr("Connected"), 1000);
-//            ui->statusBar->showMessage(tr("Searching..."));
-//            QTimer timer;
-//            QEventLoop eventLoop;
-//            timer.setInterval(2000);
-//            timer.setSingleShot(true);
-//            connect(&timer, SIGNAL(timeout()), &eventLoop, SLOT(quit()));
-//            timer.start();
-//            eventLoop.exec();
-//            m_conn->qk()->search();
-//            ui->statusBar->showMessage(tr("Done"));
         }
         else
             ui->statusBar->clearMessage();
@@ -414,8 +420,8 @@ void QkExplorerWidget::slotConnect()
 
 void QkExplorerWidget::slotSearch()
 {
-    int stackIdx = ui->stackedPanels->currentIndex();
-    ui->stackedPanels->setCurrentIndex(stackIdx);
+    ui->stackedWidget->setCurrentIndex(0);
+
     ui->explorerList->clear();
 
     PlotSettings *plotSettings = ui->plotSettings;
@@ -487,6 +493,17 @@ void QkExplorerWidget::slotLogger_append(int address, QkDevice::Event event)
     ui->eventTable->setCellWidget(r, 0, eventWidget);
 
     ui->eventTable->scrollToBottom();
+}
+
+void QkExplorerWidget::slotLogger_append(int address)
+{
+    if(!ui->loggerSettings->ui->buttonEnable->isChecked())
+        return;
+
+    QkCore *qk = m_conn->qk();
+    QQueue<QkDevice::Event> *events = qk->node(address)->device()->eventsFired();
+    while(events->count() > 0)
+        slotLogger_append(address, events->dequeue());
 }
 
 void QkExplorerWidget::slotLogger_setEnabled(bool enabled)
@@ -703,13 +720,13 @@ void QkExplorerWidget::updateInterface()
             if(m_conn->qk()->isRunning())
             {
                 ui->status_label->setText(tr("Running"));
-                QString style = "QLabel { background: #00b460; color: white; padding: 2px;}";
+                QString style = "QLabel { background: #00b460; color: white;}";
                 ui->status_label->setStyleSheet(style);
             }
             else
             {
                 ui->status_label->setText(tr("Stopped"));
-                QString style = "QLabel { background: #ef6565; color: white; padding: 2px;}";
+                QString style = "QLabel { background: #ef6565; color: white;}";
                 ui->status_label->setStyleSheet(style);
             }
             ui->status_label->setVisible(true);
@@ -725,6 +742,9 @@ void QkExplorerWidget::showError(int code, int arg)
 
 void QkExplorerWidget::showError(const QString &message)
 {
-    QMessageBox::critical(this, tr("Error"), message);
+//    QMessageBox::critical(this, tr("Error"), message);
+    QString timestamp = QDateTime::currentDateTime().time().toString("hh:mm:ss");
+    m_outputText->append(timestamp + tr(" [ERROR] ") + message);
+    m_outputWindow->show();
     qDebug() << "ERROR:" << message;
 }

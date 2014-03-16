@@ -17,7 +17,13 @@ public:
 
     Ui::LoggerSettingsWidget *ui;
 
+private slots:
+    void slotExport();
+    void slotBrowserOutputFolder();
+
 private:
+    void setupConnections();
+    void exportToCsv(const QString &outputPath);
 };
 
 #endif // LOGGERSETTINGSWIDGET_H

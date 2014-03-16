@@ -6,6 +6,8 @@
 
 #include "ptreeitemproperty.h"
 
+class QToolButton;
+
 class CProperty : public QObject
 {
     Q_OBJECT
@@ -37,6 +39,11 @@ public:
     void setValue(QVariant value);
     void setEnumList(QStringList list);
 
+    void setUserData(QVariant data);
+    QVariant userData();
+
+    QToolButton* multiFunctionButton();
+
     Type type();
     QString label();
     QVariant value();
@@ -50,8 +57,11 @@ protected slots:
 private:
     QString m_label;
     Type m_type;
+    QVariant m_userData;
 
+    QWidget *m_mainWidget;
     QWidget *m_valueWidget;
+    QToolButton *m_multiFunctionButton;
     pTreeItemProperty* m_item;
 };
 
