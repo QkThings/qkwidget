@@ -182,7 +182,7 @@
             <x>0</x>
             <y>0</y>
             <width>275</width>
-            <height>242</height>
+            <height>271</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout">
@@ -214,16 +214,25 @@
                <height>0</height>
               </size>
              </property>
+             <property name="suffix">
+              <string/>
+             </property>
+             <property name="prefix">
+              <string/>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
             </widget>
            </item>
-           <item row="2" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="label_5">
              <property name="text">
               <string>Amplitude</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
+           <item row="3" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
               <widget class="QDoubleSpinBox" name="spinAmplitudeMin">
@@ -246,7 +255,7 @@
                 <double>-999999.000000000000000</double>
                </property>
                <property name="maximum">
-                <double>999999.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="singleStep">
                 <double>0.500000000000000</double>
@@ -274,7 +283,7 @@
                 <number>2</number>
                </property>
                <property name="minimum">
-                <double>-999999.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>999999.000000000000000</double>
@@ -289,14 +298,14 @@
              </item>
             </layout>
            </item>
-           <item row="3" column="0">
+           <item row="4" column="0">
             <widget class="QLabel" name="label_9">
              <property name="text">
               <string>Axis</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="4" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_9">
              <item>
               <widget class="QPushButton" name="buttonShowY">
@@ -338,32 +347,48 @@
              </item>
             </layout>
            </item>
-           <item row="4" column="0">
+           <item row="5" column="0">
             <widget class="QCheckBox" name="checkShowTitle">
              <property name="text">
               <string>Show title</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
+           <item row="6" column="0">
             <widget class="QCheckBox" name="checkShowLegend">
              <property name="text">
               <string>Show legend</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
+           <item row="7" column="0">
             <widget class="QCheckBox" name="checkAutoscale">
              <property name="text">
               <string>Auto scale</string>
              </property>
             </widget>
            </item>
-           <item row="7" column="0">
+           <item row="8" column="0">
             <widget class="QCheckBox" name="checkStopAtEnd">
              <property name="text">
               <string>Stop at end</string>
              </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Time scale</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="comboBox">
+             <item>
+              <property name="text">
+               <string>Seconds</string>
+              </property>
+             </item>
             </widget>
            </item>
           </layout>

@@ -54,6 +54,7 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     QFontDatabase::addApplicationFont("://fonts/Ubuntu-R.ttf");
     QFontDatabase::addApplicationFont("://fonts/OpenSans-Regular.ttf");
     QFontDatabase::addApplicationFont("://fonts/PTSans.ttf");
+    QFontDatabase::addApplicationFont("://fonts/DejaVuSans.ttf");
 
     m_outputWindow = new QMainWindow(this);
     m_outputWindow->setWindowTitle(tr("Messages"));
@@ -103,6 +104,11 @@ void QkExplorerWidget::setupLayout()
     ui->debugText->setFont(debugFont);
     ui->explorerTabs->setCurrentIndex(0);
     ui->stackedWidget->setCurrentIndex(0);
+
+    QHeaderView *header;
+    header = ui->eventTable->verticalHeader();
+    header->show();
+
 
     setWindowTitle("qkexplorer");
     updateInterface();
@@ -265,8 +271,9 @@ void QkExplorerWidget::slotDataReceived(int address)
         {
             Waveform *wf = m_waveformMapper.value(addrDataPair);
             RTPlot *plot = m_plotMapper.value(wf);
-            QVector<QkDevice::Data> data = m_conn->qk()->node(address)->device()->data();
-            plot->addData(data[addrDataPair->dataIdx].value(), wf);
+            QVector<QkDevice::Data> dataArray = m_conn->qk()->node(address)->device()->data();
+            QkDevice::Data data = dataArray[addrDataPair->dataIdx];
+            plot->addData(wf, data.value(), data.timestamp());
         }
     }
 }

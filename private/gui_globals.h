@@ -12,4 +12,6 @@ const QFont GUI_MONOFONT = QFont("Consolas", 9);
 const QFont GUI_MONOFONT = QFont("Monospace", 8);
 #endif
 
+const QString MONOFONT_NAME = "DejaVuSansMono";
+
 #endif // GUI_GLOBALS_H

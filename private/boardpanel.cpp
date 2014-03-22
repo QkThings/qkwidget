@@ -257,6 +257,7 @@ void BoardPanel::refresh()
     QVector<QkBoard::Config> configs = m_board->configs();
     for(i = 0; i < configs.count(); i++)
     {
+        qDebug() << "REFRESHING CONFIG" << i << "value:" << configs[i].value();
         m_boardProp.configsList[i]->setValue(configs[i].value());
     }
 

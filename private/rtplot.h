@@ -53,8 +53,8 @@ public slots:
     void setStopAtEnd(bool enabled);
     void start();
     void stop();
-    void addData(double data, int id);
-    void addData(double data, Waveform *wf);
+    void addData(int waveformID, double data, quint64 timestamp = 0);
+    void addData(Waveform *wf, double data, quint64 timestamp = 0);
     void showTitle(bool show);
     void showAxis(bool x, bool y);
 
@@ -69,7 +69,6 @@ private slots:
 private:
     void _setup();
     void _clearAllWaveforms();
-    double _elapsedSeconds();
     QColor _pickWaveformColor();
 
     int m_id;
@@ -85,6 +84,7 @@ private:
     bool m_autoscale;
     bool m_stopAtEnd;
     bool m_elaspedTimerReset;
+    quint64 m_startTimestamp;
 };
 
 class WaveformMapper

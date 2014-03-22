@@ -50,8 +50,7 @@ RTPlot::RTPlot(QWidget *parent) :
     m_autoscale = true;
     m_stopAtEnd = false;
     m_elaspedTimerReset = false;
-    m_clock.restart();
-    m_timer.setInterval(50);
+    m_timer.setInterval(20);
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(replot()));
 
     m_nextColorIdx = 0;
@@ -356,15 +355,15 @@ void RTPlot::setStopAtEnd(bool enabled)
     if(!enabled)
     {
         m_elaspedTimerReset = false;
-        m_clock.restart();
     }
 }
 
 void RTPlot::start()
 {
     _clearAllWaveforms();
+
+    m_startTimestamp = QDateTime::currentMSecsSinceEpoch();
     m_elaspedTimerReset = false;
-    m_clock.restart();
     m_timer.start();
 }
 
@@ -373,22 +372,36 @@ void RTPlot::stop()
     m_timer.stop();
 }
 
-void RTPlot::addData(double data, Waveform *wf)
+void RTPlot::addData(Waveform *wf, double data, quint64 timestamp)
 {
-    double time = _elapsedSeconds();
+    double elapsedSeconds = ((double)timestamp - m_startTimestamp)/1000.0;
+    if(elapsedSeconds >= m_timeWindow_sec)
+    {
+        while(elapsedSeconds >= m_timeWindow_sec)
+            elapsedSeconds -= m_timeWindow_sec;
+        _clearAllWaveforms();
+        if(m_stopAtEnd)
+            m_elaspedTimerReset = true;
+        else
+            _clearAllWaveforms();
+        m_startTimestamp = QDateTime::currentMSecsSinceEpoch();
+    }
+
+    qDebug() << __FUNCTION__ << "timestamp:" << timestamp << "window:" << m_timeWindow_sec << "elapsedSeconds:" << elapsedSeconds;
+
     if(m_stopAtEnd && m_elaspedTimerReset)
         return;
-    //qDebug() << "addData" << time << data;
-    wf->graph->addData(time, data);
+
+    wf->graph->addData(elapsedSeconds, data);
     if(m_autoscale)
         wf->graph->rescaleValueAxis(true, false);
 }
 
-void RTPlot::addData(double data, int id)
+void RTPlot::addData(int waveformID, double data, quint64 timestamp)
 {
-    Waveform *wf = waveform(id);
+    Waveform *wf = waveform(waveformID);
     if(wf != 0)
-        addData(data, wf);
+        addData(wf, data, timestamp);
 }
 
 void RTPlot::_clearAllWaveforms()
@@ -396,21 +409,6 @@ void RTPlot::_clearAllWaveforms()
     int i;
     for(i=0; i < graphCount(); i++)
         graph(i)->clearData();
-}
-
-double RTPlot::_elapsedSeconds()
-{
-    double elapsed_sec = (double)m_clock.elapsed()/1000.0;
-    if(elapsed_sec > m_timeWindow_sec)
-    {
-        m_clock.restart();
-        elapsed_sec = 0.0;
-        if(m_stopAtEnd)
-            m_elaspedTimerReset = true;
-        else
-            _clearAllWaveforms();
-    }
-    return elapsed_sec;
 }
 
 QColor RTPlot::_pickWaveformColor()

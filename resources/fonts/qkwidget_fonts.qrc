@@ -3,5 +3,6 @@
         <file>Ubuntu-R.ttf</file>
         <file>PTSans.ttf</file>
         <file>OpenSans-Regular.ttf</file>
+        <file>DejaVuSansMono.ttf</file>
     </qresource>
 </RCC>

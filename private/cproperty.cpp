@@ -34,8 +34,8 @@ CProperty::CProperty(QString label, Type type, CProperty *top) :
     if(m_type == CProperty::Hex)
     {
         QHexSpinBox* spin = new QHexSpinBox();
-        spin->setMinimum(0);
-        spin->setMaximum(0xFFFF);
+        spin->setMinimum(0x80000000);
+        spin->setMaximum(0x7FFFFFFF);
 
         m_valueWidget = spin;
 
@@ -162,7 +162,7 @@ void CProperty::setValue(QVariant value)
     if(m_type == CProperty::Hex)
     {
         QHexSpinBox* spin = reinterpret_cast<QHexSpinBox*>(m_valueWidget);
-        spin->setValue(value.toInt());
+        spin->setValue(value.toUInt());
     }
     else if(m_type == CProperty::Int)
     {
