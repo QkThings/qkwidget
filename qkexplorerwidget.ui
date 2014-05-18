@@ -36,7 +36,7 @@
     <item>
      <widget class="QTabWidget" name="explorerTabs">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="explorerTab">
        <attribute name="title">
@@ -58,7 +58,7 @@
         <item>
          <widget class="QStackedWidget" name="stackedWidget">
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="page">
            <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -1084,6 +1084,20 @@
       </item>
       <item>
        <widget class="QComboBox" name="comboPort"/>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBaud">
+        <item>
+         <property name="text">
+          <string>38400</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>115200</string>
+         </property>
+        </item>
+       </widget>
       </item>
       <item>
        <widget class="QPushButton" name="buttonConnect">

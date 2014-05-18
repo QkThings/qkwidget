@@ -86,7 +86,7 @@ private:
     enum SelectedBoardType
     {
         sbtGatewayNetwork,
-        sbtModuleDevice,
+        sbtCommDevice,
         sbtUnknown
     };
     enum

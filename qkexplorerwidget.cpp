@@ -207,6 +207,8 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
     qk = m_conn->qk();
     connect(qk, SIGNAL(error(int,int)), this, SLOT(showError(int,int)));
     connect(qk, SIGNAL(infoChanged(int,QkBoard::Type,int)), this, SLOT(slotNodeUpdated(int)));
+    connect(qk, SIGNAL(commFound(int)), this, SLOT(slotNodeFound(int)));
+    connect(qk, SIGNAL(commUpdated(int)), this, SLOT(slotNodeUpdated(int)));
     connect(qk, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
     connect(qk, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
     connect(qk, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
@@ -230,17 +232,17 @@ void QkExplorerWidget::slotExplorerListRowChanged(int row)
     QString itemText = ui->explorerList->item(row)->text();
     if(itemText.contains(tr("Node")))
     {
-        m_selBoardType = sbtModuleDevice;
+        m_selBoardType = sbtCommDevice;
         bool ok;
         QString addrStr = itemText.split(' ').at(1);
         int addr = addrStr.toInt(&ok, 16);
         m_selNode = m_conn->qk()->node(addr);
 
         ui->comboBoardType->clear();
-        if(m_selNode->module() != 0)
-            ui->comboBoardType->addItem("Comm");
+        if(m_selNode->comm() != 0)
+            ui->comboBoardType->addItem("qkcomm");
         if(m_selNode->device() != 0)
-            ui->comboBoardType->addItem("Device");
+            ui->comboBoardType->addItem("qkdevice");
     }
     else
     {
@@ -301,7 +303,7 @@ void QkExplorerWidget::slotNodeUpdated(int address)
 {
     qDebug() << __FUNCTION__;
 
-    if(m_selBoardType == sbtModuleDevice)
+    if(m_selBoardType == sbtCommDevice)
     {
         if(m_selNode != 0 && m_selNode->address() == address)
             slotBoardPanels_reload();
@@ -314,11 +316,11 @@ void QkExplorerWidget::slotBoardTypeChanged()
 {
     if(m_selNode == 0)
         return;
-    if(m_selBoardType == sbtModuleDevice)
+    if(m_selBoardType == sbtCommDevice)
     {
-        if(ui->comboBoardType->currentText().toLower() == "comm")
-            ui->boardPanel->setBoard(m_selNode->module(), QkBoard::btComm, m_conn);
-        else if(ui->comboBoardType->currentText().toLower() == "device")
+        if(ui->comboBoardType->currentText().toLower().contains("comm"))
+            ui->boardPanel->setBoard(m_selNode->comm(), QkBoard::btComm, m_conn);
+        else if(ui->comboBoardType->currentText().toLower().contains("device"))
             ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
     }
     ui->boardPanel->reload();
@@ -330,14 +332,24 @@ void QkExplorerWidget::slotBoardPanels_reload()
     if(ui->explorerList->currentRow() < 0)
         return;
 
-    if(m_selBoardType == sbtModuleDevice)
+    if(m_selBoardType == sbtCommDevice)
     {
         if(m_selNode == 0)
             return;
 
-        ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
-        ui->boardPanel->reload();
-        ui->boardPanel->refresh();
+        if(m_selNode->comm() != 0)
+        {
+            ui->boardPanel->setBoard(m_selNode->comm(), QkBoard::btComm, m_conn);
+            ui->boardPanel->reload();
+            ui->boardPanel->refresh();
+        }
+
+        if(m_selNode->device() != 0)
+        {
+            ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
+            ui->boardPanel->reload();
+            ui->boardPanel->refresh();
+        }
     }
 }
 
@@ -410,6 +422,9 @@ void QkExplorerWidget::slotConnect()
         {
             QkSerialConnection *serialConn = (QkSerialConnection*)m_conn;
             serialConn->setBaudRate(38400);
+            //serialConn->setBaudRate(115200);
+//            int baudRate = ui->comboBaud->currentText().toInt();
+//            serialConn->setBaudRate(baudRate);
             serialConn->setPortName(ui->comboPort->currentText());
         }
         qDebug() << "connecting...";
@@ -611,8 +626,11 @@ void QkExplorerWidget::slotViewer_nodeChanged(int address)
 
     QkNode *node = m_conn->qk()->node(address);
     plotSettings->ui->comboData->clear();
-    foreach(QkDevice::Data data, node->device()->data())
-        plotSettings->ui->comboData->addItem(data.label());
+    if(node->device() != 0)
+    {
+        foreach(QkDevice::Data data, node->device()->data())
+            plotSettings->ui->comboData->addItem(data.label());
+    }
 }
 
 void QkExplorerWidget::slotViewer_nodeChanged(QString addrStr)
