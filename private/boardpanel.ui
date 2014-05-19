@@ -56,7 +56,7 @@ border-radius: 20px; border: 1px solid #bbb;
      <property name="styleSheet">
       <string notr="true">QWidget
 {
-background-color: white;
+background-color: #f7f7f7;
 }</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -98,7 +98,7 @@ background-color: white;
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap>:/img/comm_text_color.png</pixmap>
+               <pixmap resource="../resources/img/qkwidget_img.qrc">:/img/qkdevice_32.png</pixmap>
               </property>
              </widget>
             </item>
@@ -118,6 +118,32 @@ background-color: white;
            </spacer>
           </item>
          </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>16</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_name">
+          <property name="text">
+           <string>QkTestBoard</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
         </item>
         <item>
          <spacer name="verticalSpacer_2">
@@ -156,58 +182,30 @@ background-color: white;
              <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
             </property>
             <item row="0" column="0">
-             <widget class="QLabel" name="label_2">
+             <widget class="QLabel" name="label_4">
               <property name="text">
-               <string>Name:</string>
+               <string>qkprogram:</string>
               </property>
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLabel" name="label_name">
-              <property name="text">
-               <string>QkTestBoard</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>Qk version:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
              <widget class="QLabel" name="label_qkversion">
               <property name="text">
                <string>0.1.0</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="1" column="0">
              <widget class="QLabel" name="label_3">
               <property name="text">
                <string>Firmware:</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
+            <item row="1" column="1">
              <widget class="QLabel" name="label_firmware">
               <property name="text">
                <string>EF23</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>S/N:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QLabel" name="label_serialnumber">
-              <property name="text">
-               <string>n/a</string>
               </property>
              </widget>
             </item>
@@ -325,6 +323,8 @@ background-color: white;
    <header>cpropertybrowser.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../resources/img/qkwidget_img.qrc"/>
+ </resources>
  <connections/>
 </ui>

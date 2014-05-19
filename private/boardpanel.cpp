@@ -24,6 +24,14 @@ BoardPanel::BoardPanel(QWidget *parent) :
     ui->browser->setColumnHidden(BrowserColumnPopup, true);
     ui->browser->setIndentation(10);
 
+    QFont f("Roboto-Regular", 12);
+    f.setWeight(QFont::Light);
+    ui->label_name->setFont(f);
+
+    QPalette p = ui->label_name->palette();
+    p.setColor(QPalette::WindowText, QColor("#111111"));
+    ui->label_name->setPalette(p);
+
     m_board = 0;
 
     _setupConnections();
@@ -45,8 +53,8 @@ void BoardPanel::setBoard(QkBoard *board, QkBoard::Type type, QkConnection *conn
 {
     switch(type)
     {
-    case QkBoard::btDevice: ui->pixmap->setPixmap(QPixmap(":/img/device_text_color.png")); break;
-    case QkBoard::btComm: ui->pixmap->setPixmap(QPixmap(":/img/comm_text_color.png")); break;
+    case QkBoard::btDevice: ui->pixmap->setPixmap(QPixmap(":/img/qkdevice_24.png")); break;
+    case QkBoard::btComm: ui->pixmap->setPixmap(QPixmap(":/img/qkcomm_24.png")); break;
     default: ;
     }
 

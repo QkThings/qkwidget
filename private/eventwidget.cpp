@@ -8,10 +8,10 @@ EventWidget::EventWidget(QWidget *parent) :
     ui(new Ui::EventWidget)
 {
     ui->setupUi(this);
-    ui->label->setFont(QFont(MONOFONT_NAME, 9));
-    ui->source->setFont(QFont(MONOFONT_NAME, 8));
-    ui->timestamp->setFont(QFont(MONOFONT_NAME, 8));
-    ui->message->setFont(QFont(MONOFONT_NAME, 9));
+    ui->label->setFont(QFont("Roboto-Regular", 10));
+    ui->source->setFont(QFont(MONOFONT_NAME, 9));
+    ui->timestamp->setFont(QFont(MONOFONT_NAME, 9));
+    ui->message->setFont(QFont("Roboto-Regular", 9));
 }
 
 EventWidget::~EventWidget()

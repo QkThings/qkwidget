@@ -3,5 +3,9 @@
         <file>daemon_text.png</file>
         <file>qk_24.png</file>
         <file>qk_64.png</file>
+        <file>qkdevice_32.png</file>
+        <file>qkcomm_32.png</file>
+        <file>qkdevice_24.png</file>
+        <file>qkcomm_24.png</file>
     </qresource>
 </RCC>

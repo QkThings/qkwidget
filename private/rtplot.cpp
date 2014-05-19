@@ -71,11 +71,15 @@ void RTPlot::_setup()
                     QCP::iSelectLegend);
 
     m_title = new QCPPlotTitle(this, "Interaction Example");
-    m_title->setFont(QFont("Ubuntu-R",11));
+    QFont titleFont;
+    titleFont.setFamily("Roboto-Regular");
+    titleFont.setPointSizeF(11);
+//    titleFont.setWeight(QFont::Light);
+    m_title->setFont(titleFont);
 
     //plotLayout()->insertRow(0);
     //plotLayout()->setRowStretchFactor(0, 0.0);
-    QFont axisLabelFont("Ubuntu-R",8);
+    QFont axisLabelFont("Roboto-Regular",8);
     xAxis->setLabelFont(axisLabelFont);
     yAxis->setLabelFont(axisLabelFont);
     xAxis->setTickLabelFont(axisLabelFont);
@@ -95,7 +99,7 @@ void RTPlot::_setup()
     m_yAxisLabel = tr("Amplitude");
     showAxis(false, false);
 
-    legend->setFont(QFont("Ubuntu-R",8));
+    legend->setFont(QFont("Roboto-Regular",8));
     legend->setSelectableParts(QCPLegend::spItems); // legend box shall not be selectable, only legend items
 
     // connect slot that ties some axis selections together (especially opposite axes):

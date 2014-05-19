@@ -55,6 +55,8 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     QFontDatabase::addApplicationFont("://fonts/OpenSans-Regular.ttf");
     QFontDatabase::addApplicationFont("://fonts/PTSans.ttf");
     QFontDatabase::addApplicationFont("://fonts/DejaVuSans.ttf");
+    QFontDatabase::addApplicationFont("://fonts/Roboto-Regular.ttf");
+    QFontDatabase::addApplicationFont("://fonts/Roboto-Thin.ttf");
 
     m_outputWindow = new QMainWindow(this);
     m_outputWindow->setWindowTitle(tr("Messages"));
@@ -109,6 +111,18 @@ void QkExplorerWidget::setupLayout()
     header = ui->eventTable->verticalHeader();
     header->show();
 
+    QFont dashboardTitleFont;
+    dashboardTitleFont.setFamily("Roboto-Regular");
+    dashboardTitleFont.setPointSize(16);
+    dashboardTitleFont.setWeight(QFont::Light);
+    ui->dashboard_title->setFont(dashboardTitleFont);
+    ui->dashboard_title->setText(tr("Ooops! I can't see anything."));
+
+    QFont dashboardMessageFont(dashboardTitleFont);
+    dashboardMessageFont.setPointSize(10);
+    dashboardMessageFont.setWeight(QFont::Normal);
+    ui->dashboard_message->setFont(dashboardMessageFont);
+    ui->dashboard_message->setText(tr("First, you need to establish a connection.\nThen, search for devices."));
 
     setWindowTitle("qkexplorer");
     updateInterface();
@@ -721,17 +735,17 @@ void QkExplorerWidget::updateInterface()
     bool connected = (m_conn != 0 && m_conn->isConnected() ? true : false);
     if(connected)
     {
-        ui->buttonConnect->setText(tr("Connected"));
-        QPalette buttonPalette(QColor("#00b460"));
-        ui->buttonConnect->setPalette(buttonPalette);
+        ui->buttonConnect->setText(tr("Disconnect"));
+//        QPalette buttonPalette(QColor("#00b460"));
+//        ui->buttonConnect->setPalette(buttonPalette);
         ui->comboPort->setDisabled(true);
         ui->buttonReloadSerialPorts->setDisabled(true);
     }
     else
     {
-        ui->buttonConnect->setText(tr("Disconnected"));
-        QPalette buttonPalette(QColor("#ef6565"));
-        ui->buttonConnect->setPalette(buttonPalette);
+        ui->buttonConnect->setText(tr("Connect"));
+//        QPalette buttonPalette(QColor("#ef6565"));
+//        ui->buttonConnect->setPalette(buttonPalette);
         ui->comboPort->setDisabled(false);
         ui->buttonReloadSerialPorts->setDisabled(false);
     }
@@ -739,7 +753,7 @@ void QkExplorerWidget::updateInterface()
     if(m_conn != 0)
     {
         if(!m_conn->isConnected())
-            ui->status_label->setVisible(false);
+            ui->status_label->setEnabled(false);
         else
         {
             if(m_conn->qk()->isRunning())
@@ -754,7 +768,7 @@ void QkExplorerWidget::updateInterface()
                 QString style = "QLabel { background: #ef6565; color: white;}";
                 ui->status_label->setStyleSheet(style);
             }
-            ui->status_label->setVisible(true);
+            ui->status_label->setEnabled(true);
         }
     }
 

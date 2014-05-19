@@ -4,5 +4,7 @@
         <file>PTSans.ttf</file>
         <file>OpenSans-Regular.ttf</file>
         <file>DejaVuSansMono.ttf</file>
+        <file>Roboto-Regular.ttf</file>
+        <file>Roboto-Thin.ttf</file>
     </qresource>
 </RCC>
