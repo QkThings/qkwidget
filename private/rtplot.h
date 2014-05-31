@@ -105,6 +105,8 @@ public:
     int id();
     void mousePressEvent(QMouseEvent *e);
 
+    static void resetId() { nextID = 0; }
+
 signals:
     void dockSelected(int);
     void titleChanged(int,QString);

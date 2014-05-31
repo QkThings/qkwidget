@@ -32,10 +32,10 @@ BoardPanel::BoardPanel(QWidget *parent) :
     p.setColor(QPalette::WindowText, QColor("#111111"));
     ui->label_name->setPalette(p);
 
-    m_board = 0;
+    reset();
 
-    _setupConnections();
-    _updateInterface();
+    setupConnections();
+    updateInterface();
 }
 
 BoardPanel::~BoardPanel()
@@ -43,10 +43,16 @@ BoardPanel::~BoardPanel()
     delete ui;
 }
 
-void BoardPanel::_setupConnections()
+void BoardPanel::setupConnections()
 {
     connect(ui->button_update, SIGNAL(clicked()), this, SLOT(_slotUpdate()));
     connect(ui->button_save, SIGNAL(clicked()), this, SLOT(_slotSave()));
+}
+
+void BoardPanel::reset()
+{
+    m_board = 0;
+    m_conn = 0;
 }
 
 void BoardPanel::setBoard(QkBoard *board, QkBoard::Type type, QkConnection *conn)
@@ -66,23 +72,22 @@ void BoardPanel::setBoard(QkBoard *board, QkBoard::Type type, QkConnection *conn
     {
         ui->label_name->setText(tr("n/a"));
         ui->label_firmware->setText(tr("n/a"));
-        ui->label_qkversion->setText(tr("n/a"));
+        //ui->label_qkversion->setText(tr("n/a"));
     }
     else
     {
         ui->label_name->setText(board->name());
         ui->label_firmware->setText(QString().sprintf("%04X", board->firmwareVersion()));
-        ui->label_qkversion->setText(board->qkInfo().versionString());
+        //ui->label_qkversion->setText(board->qkInfo().versionString());
 
         reload();
         refresh();
     }
-    _updateInterface();
+    updateInterface();
 }
 
 void BoardPanel::reload()
 {
-    qDebug() << __FUNCTION__;
     CPropertyBrowser *browser = ui->browser;
     QkDevice *device = 0;
 
@@ -90,7 +95,6 @@ void BoardPanel::reload()
 
     if(m_board == 0) // not available
     {
-        qDebug() << __FUNCTION__ << "m_board == 0";
         return;
     }
 
@@ -265,7 +269,6 @@ void BoardPanel::refresh()
     QVector<QkBoard::Config> configs = m_board->configs();
     for(i = 0; i < configs.count(); i++)
     {
-        qDebug() << "REFRESHING CONFIG" << i << "value:" << configs[i].value();
         m_boardProp.configsList[i]->setValue(configs[i].value());
     }
 
@@ -311,8 +314,6 @@ void BoardPanel::_slotActionValueChanged(CProperty *prop)
     if(m_board == 0) return;
 
     int action_id = prop->userData().toInt();
-
-    qDebug() << "value of action" << prop->userData().toInt() << "changed";
 
     QkDevice *device = (QkDevice*) m_board;
 
@@ -372,9 +373,9 @@ void BoardPanel::_slotSave()
 
 }
 
-void BoardPanel::_updateInterface()
+void BoardPanel::updateInterface()
 {
     bool buttonsEnabled = (m_board != 0);
     ui->button_update->setEnabled(buttonsEnabled);
-    ui->button_save->setEnabled(buttonsEnabled);
+    ui->button_save->setEnabled(false);
 }

@@ -41,6 +41,7 @@ public slots:
 private slots:
     void slotReloadSerialPorts();
     void slotSetSerialPortName();
+    void slotStatus(QkCore::Status status);
     void slotConnect();
     void slotSearch();
     void slotStart();
@@ -64,6 +65,7 @@ private slots:
 
     void slotViewer_addPlot();
     void slotViewer_removePlot();
+    void slotViewer_removeAllPlots();
     void slotViewer_addWaveform();
     void slotViewer_removeWaveform();
     void slotViewer_nodeChanged(int address);
@@ -80,8 +82,8 @@ private slots:
 private:
     enum StackedPanelIndex
     {
-        spiNone = 0,
-        spiNode = 1
+        spiHome = 0,
+        spiExplorer = 1
     };
     enum SelectedBoardType
     {
@@ -111,9 +113,10 @@ private:
         int dataIdx;
     };
 
-    void setup();
+    void reset();
     void setupLayout();
     void setupConnections();
+    void setDashboardMessage(const QString &title, const QString &message);
     int explorerList_findNode(int address);
 
     Ui::QkExplorerWidget *ui;

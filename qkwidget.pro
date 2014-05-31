@@ -17,14 +17,15 @@ TEMPLATE = lib
 DEFINES += QKWIDGET_LIBRARY
 
 INCLUDEPATH += private
+INCLUDEPATH += ../utils
 
 INCLUDEPATH += ../qkcore
 LIBS += -lqkcore
 QMAKE_LIBDIR += ../qkcore/release
 
-INCLUDEPATH += ../qkconnect
-LIBS += -lqkconnect
-QMAKE_LIBDIR += ../qkconnect/release
+#INCLUDEPATH += ../qkconnect
+#LIBS += -lqkconnect
+#QMAKE_LIBDIR += ../qkconnect/release
 
 SOURCES += qkexplorerwidget.cpp \
     private/rtplot.cpp \

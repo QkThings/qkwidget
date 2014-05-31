@@ -20,6 +20,7 @@ public:
     explicit BoardPanel(QWidget *parent = 0);
     ~BoardPanel();
     
+    void reset();
     void setBoard(QkBoard *board, QkBoard::Type type, QkConnection *conn);
     void reload();
     void refresh();
@@ -30,7 +31,7 @@ private slots:
     void _slotSamplingModeChanged();
     void _slotUpdate();
     void _slotSave();
-    void _updateInterface();
+    void updateInterface();
 
 private:
     enum
@@ -88,7 +89,7 @@ private:
     SamplingProperties m_sampProp;
     DeviceProperties m_deviceProp;
 
-    void _setupConnections();
+    void setupConnections();
 };
 
 #endif // BOARDPANEL_H

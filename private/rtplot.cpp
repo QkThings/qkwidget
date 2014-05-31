@@ -391,8 +391,6 @@ void RTPlot::addData(Waveform *wf, double data, quint64 timestamp)
         m_startTimestamp = QDateTime::currentMSecsSinceEpoch();
     }
 
-    qDebug() << __FUNCTION__ << "timestamp:" << timestamp << "window:" << m_timeWindow_sec << "elapsedSeconds:" << elapsedSeconds;
-
     if(m_stopAtEnd && m_elaspedTimerReset)
         return;
 
