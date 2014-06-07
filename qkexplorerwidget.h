@@ -2,6 +2,8 @@
 #define QKEXPLORERWIDGET_H
 
 #include <QMainWindow>
+#include <QDockWidget>
+#include <QSignalMapper>
 
 namespace Ui {
 class QkExplorerWidget;
@@ -34,6 +36,7 @@ public:
     ~QkExplorerWidget();
 
     void setModeFlags(int flags);
+    QList<QDockWidget *> docks();
 
 public slots:
     void setCurrentConnection(QkConnection *conn);
@@ -54,6 +57,8 @@ private slots:
     void slotExplorerListRowChanged(int row);
     void slotDataReceived(int address);
     void slotNodeUpdated(int address);
+
+    void slotDock(int id);
 
     void slotLogger_append(int address, QkDevice::Event event);
     void slotLogger_append(int address);
@@ -91,6 +96,14 @@ private:
         sbtCommDevice,
         sbtUnknown
     };
+    enum TabIndex
+    {
+        TabDashboard,
+        TabViewer,
+        TabLogger,
+        TabDebug,
+        TabCOUNT
+    };
     enum
     {
         LoggerColumnEventTimestamp,
@@ -105,6 +118,28 @@ private:
         LoggerColumnNotificationSource,
         LoggerColumnNotificationMessage,
         LoggerColumnNotificationArguments
+    };
+
+    class DockableWidget {
+    public:
+        DockableWidget(QWidget *parent) {
+            dock = new QDockWidget(QString(), parent);
+            dock->setFeatures(QDockWidget::DockWidgetVerticalTitleBar |
+                              QDockWidget::DockWidgetFloatable |
+                              QDockWidget::DockWidgetMovable |
+                              QDockWidget::DockWidgetFloatable);
+            dock->setAllowedAreas(Qt::AllDockWidgetAreas);
+            dock->setFloating(true);
+            dock->hide();
+            docked = false;
+        }
+        ~DockableWidget()
+        {
+            delete dock;
+        }
+        QDockWidget *dock;
+        QWidget *widget;
+        bool docked;
     };
 
     class AddressDataPair {
@@ -124,6 +159,8 @@ private:
     SelectedBoardType m_selBoardType;
     QkNode *m_selNode;
 
+    QSignalMapper m_dockSignalMapper;
+
     QMap<int,RTPlotDock*> m_plotDockMapper;
     QMap<Waveform*,RTPlot*> m_plotMapper;
     QMap<AddressDataPair*, Waveform*> m_waveformMapper;
@@ -141,6 +178,8 @@ private:
 
     QMainWindow *m_outputWindow;
     QTextEdit *m_outputText;
+
+    QVector<DockableWidget*> m_dockableWidgets;
 };
 
 #endif // QKEXPLORERWIDGET_H

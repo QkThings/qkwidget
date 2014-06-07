@@ -44,6 +44,24 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::QkExplorerWidget)
 {
+    ui->setupUi(this);
+
+    m_dockableWidgets.resize(TabCOUNT);
+    for(int i = 0; i < TabCOUNT; i++)
+        m_dockableWidgets.insert(i, new DockableWidget(parent));
+
+    m_dockableWidgets[TabDashboard]->dock->setWindowTitle("Dashboard");
+    m_dockableWidgets[TabDashboard]->widget = ui->tabDashboard;
+
+    m_dockableWidgets[TabViewer]->dock->setWindowTitle("Viewer");
+    m_dockableWidgets[TabViewer]->widget = ui->tabViewer;
+
+    m_dockableWidgets[TabLogger]->dock->setWindowTitle("Logger");
+    m_dockableWidgets[TabLogger]->widget = ui->tabLogger;
+
+    m_dockableWidgets[TabDebug]->dock->setWindowTitle("Debug");
+    m_dockableWidgets[TabDebug]->widget = ui->tabDebug;
+
     m_conn = 0;
     m_debugPrintTime = false;
     m_debugPrintSource = false;
@@ -70,7 +88,6 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     m_outputWindow->setMinimumWidth(500);
     m_outputWindow->hide();
 
-
     setupLayout();
     setupConnections();
     reset();
@@ -80,6 +97,37 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
 QkExplorerWidget::~QkExplorerWidget()
 {
     delete ui;
+}
+
+QList<QDockWidget*> QkExplorerWidget::docks()
+{
+    QList<QDockWidget*> list;
+    foreach(DockableWidget *dw, m_dockableWidgets)
+        if(dw != 0)
+            list.append(dw->dock);
+    return list;
+}
+
+void QkExplorerWidget::slotDock(int id)
+{
+    static int margin = 0;
+    DockableWidget *dw = m_dockableWidgets[id];
+    if(!dw->docked)
+    {
+        dw->dock->setWidget(dw->widget);
+        margin = dw->widget->layout()->margin();
+        dw->widget->layout()->setContentsMargins(0, 4, 9, 0);
+        dw->dock->show();
+    }
+    else
+    {
+        dw->dock->hide();
+        dw->widget->layout()->setMargin(margin);
+        ui->explorerTabs->insertTab(id, dw->widget, dw->widget->windowTitle());
+        ui->explorerTabs->setCurrentIndex(id);
+    }
+
+    dw->docked = !dw->docked;
 }
 
 void QkExplorerWidget::setModeFlags(int flags)
@@ -116,14 +164,18 @@ void QkExplorerWidget::setDashboardMessage(const QString &title, const QString &
 
 void QkExplorerWidget::setupLayout()
 {
-    ui->setupUi(this);
     ui->menubar->hide();
     ui->statusBar->hide();
     QFont debugFont(GUI_MONOFONT);
-    debugFont.setPointSize(9);
+    debugFont.setPointSize(9);ui->tabDashboard->setWindowTitle(tr("Dashboard"));
     ui->debugText->setFont(debugFont);
     ui->explorerTabs->setCurrentIndex(0);
     ui->stackedWidget->setCurrentIndex(spiHome);
+
+    ui->tabDashboard->setWindowTitle(tr("Dashboard"));
+    ui->tabViewer->setWindowTitle(tr("Viewer"));
+    ui->tabLogger->setWindowTitle(tr("Logger"));
+    ui->tabDebug->setWindowTitle(tr("Debug"));
 
     QHeaderView *header;
     header = ui->eventTable->verticalHeader();
@@ -151,6 +203,22 @@ void QkExplorerWidget::setupLayout()
 
 void QkExplorerWidget::setupConnections()
 {
+    connect(ui->dashboard_buttonDock, SIGNAL(clicked()),
+            &m_dockSignalMapper, SLOT(map()));
+    connect(ui->viewer_buttonDock, SIGNAL(clicked()),
+            &m_dockSignalMapper, SLOT(map()));
+    connect(ui->logger_buttonDock, SIGNAL(clicked()),
+            &m_dockSignalMapper, SLOT(map()));
+    connect(ui->debug_buttonDock, SIGNAL(clicked()),
+            &m_dockSignalMapper, SLOT(map()));
+
+    m_dockSignalMapper.setMapping(ui->dashboard_buttonDock, (int) TabDashboard);
+    m_dockSignalMapper.setMapping(ui->viewer_buttonDock, (int) TabViewer);
+    m_dockSignalMapper.setMapping(ui->logger_buttonDock, (int) TabLogger);
+    m_dockSignalMapper.setMapping(ui->debug_buttonDock, (int) TabDebug);
+
+    connect(&m_dockSignalMapper, SIGNAL(mapped(int)), this, SLOT(slotDock(int)));
+
     connect(ui->buttonReloadSerialPorts, SIGNAL(clicked()),
             this, SLOT(slotReloadSerialPorts()));
     connect(ui->buttonConnect, SIGNAL(clicked()),
@@ -478,10 +546,11 @@ void QkExplorerWidget::slotConnect()
         }
 
         ui->statusBar->showMessage(tr("Connecting"));
-        if(m_conn->open())
-            ui->statusBar->showMessage(tr("Connected"), 1000);
-        else
-            ui->statusBar->clearMessage();
+        m_conn->open();
+//        if(m_conn->open())
+//            ui->statusBar->showMessage(tr("Connected"), 1000);
+//        else
+//            ui->statusBar->clearMessage();
     }
     updateInterface();
 }
@@ -542,10 +611,10 @@ void QkExplorerWidget::slotDebug_updateOptions()
 
 void QkExplorerWidget::slotDebug_setEnabled(bool enabled)
 {
-    if(enabled)
-        ui->label_debugEnabled->setPixmap(QPixmap(":/icons/on_16.png"));
-    else
-        ui->label_debugEnabled->setPixmap(QPixmap(":/icons/off_16.png"));
+//    if(enabled)
+//        ui->label_debugEnabled->setPixmap(QPixmap(":/icons/on_16.png"));
+//    else
+//        ui->label_debugEnabled->setPixmap(QPixmap(":/icons/off_16.png"));
 }
 
 void QkExplorerWidget::slotLogger_append(int address, QkDevice::Event event)
@@ -577,10 +646,10 @@ void QkExplorerWidget::slotLogger_append(int address)
 
 void QkExplorerWidget::slotLogger_setEnabled(bool enabled)
 {
-    if(enabled)
-        ui->label_loggerEnabled->setPixmap(QPixmap(":/icons/on_16.png"));
-    else
-        ui->label_loggerEnabled->setPixmap(QPixmap(":/icons/off_16.png"));
+//    if(enabled)
+//        ui->label_loggerEnabled->setPixmap(QPixmap(":/icons/on_16.png"));
+//    else
+//        ui->label_loggerEnabled->setPixmap(QPixmap(":/icons/off_16.png"));
 }
 
 void QkExplorerWidget::slotViewer_addPlot()

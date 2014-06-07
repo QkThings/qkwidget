@@ -36,7 +36,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="page_3">
        <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -105,9 +105,9 @@
         <item>
          <widget class="QTabWidget" name="explorerTabs">
           <property name="currentIndex">
-           <number>0</number>
+           <number>3</number>
           </property>
-          <widget class="QWidget" name="explorerTab">
+          <widget class="QWidget" name="tabDashboard">
            <attribute name="title">
             <string>Dashboard</string>
            </attribute>
@@ -168,6 +168,16 @@
                   </property>
                  </widget>
                 </item>
+                <item>
+                 <widget class="QToolButton" name="dashboard_buttonDock">
+                  <property name="text">
+                   <string>...</string>
+                  </property>
+                  <property name="autoRaise">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
                </layout>
               </item>
               <item>
@@ -184,7 +194,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab">
+          <widget class="QWidget" name="tabViewer">
            <attribute name="title">
             <string>Viewer</string>
            </attribute>
@@ -266,6 +276,13 @@
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QToolButton" name="viewer_buttonDock">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </item>
             <item>
@@ -324,7 +341,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="loggerTab">
+          <widget class="QWidget" name="tabLogger">
            <attribute name="title">
             <string>Logger</string>
            </attribute>
@@ -345,15 +362,23 @@
                </spacer>
               </item>
               <item>
-               <widget class="QLabel" name="label_loggerEnabled">
+               <widget class="QToolButton" name="toolButton_4">
                 <property name="text">
-                 <string/>
+                 <string>clear</string>
                 </property>
-                <property name="pixmap">
-                 <pixmap resource="resources/icons/qkwidget_icons.qrc">:/icons/off_16.png</pixmap>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="toolButton">
+                <property name="text">
+                 <string>...</string>
                 </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
+                <property name="icon">
+                 <iconset resource="resources/icons/qkwidget_icons.qrc">
+                  <normaloff>:/icons/off_16.png</normaloff>:/icons/off_16.png</iconset>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -371,6 +396,16 @@
                 </property>
                 <property name="checked">
                  <bool>true</bool>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="logger_buttonDock">
+                <property name="text">
+                 <string>...</string>
                 </property>
                 <property name="autoRaise">
                  <bool>true</bool>
@@ -430,7 +465,7 @@
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="debugTab">
+          <widget class="QWidget" name="tabDebug">
            <attribute name="title">
             <string>Debug</string>
            </attribute>
@@ -451,12 +486,37 @@
                </spacer>
               </item>
               <item>
-               <widget class="QLabel" name="label_debugEnabled">
+               <widget class="QCheckBox" name="checkBox">
                 <property name="text">
-                 <string/>
+                 <string>Timestamp</string>
                 </property>
-                <property name="pixmap">
-                 <pixmap resource="resources/icons/qkwidget_icons.qrc">:/icons/off_16.png</pixmap>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBox_2">
+                <property name="text">
+                 <string>Source</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="toolButton_3">
+                <property name="text">
+                 <string>clear</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="toolButton_2">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="resources/icons/qkwidget_icons.qrc">
+                  <normaloff>:/icons/off_16.png</normaloff>:/icons/off_16.png</iconset>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -474,6 +534,16 @@
                 </property>
                 <property name="checked">
                  <bool>true</bool>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="debug_buttonDock">
+                <property name="text">
+                 <string>...</string>
                 </property>
                 <property name="autoRaise">
                  <bool>true</bool>
