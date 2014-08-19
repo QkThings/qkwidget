@@ -20,5 +20,6 @@
         <file>play_16.png</file>
         <file>status_stopped_16.png</file>
         <file>status_running_16.png</file>
+        <file>dock.png</file>
     </qresource>
 </RCC>

@@ -9,9 +9,8 @@ namespace Ui {
 class QkExplorerWidget;
 }
 
-//#include "qkconnect.h"
-#include "qkcore.h" //TODO remove this
-class QkConnection;
+#include "qkcore.h"
+#include "qkconnect.h"
 
 class CProperty;
 class CPropertyBrowser;
@@ -27,24 +26,34 @@ class QkExplorerWidget : public QMainWindow
     Q_OBJECT
     
 public:
-    enum ModeFlags
+    enum ExplorerMode
     {
-        mfSingleNode = (1<<0),
-        mfSingleConnection = (1<<1)
+        ModeSingleNode = (1<<0),
+        ModeSingleConnection = (1<<1)
     };
+    typedef int ExplorerModes;
+
+    enum ExplorerFeature
+    {
+        FeatureDockableWidgets = (1<<0)
+    };
+    typedef int ExplorerFeatures;
+
     explicit QkExplorerWidget(QWidget *parent = 0);
     ~QkExplorerWidget();
 
-    void setModeFlags(int flags);
+    void setModes(ExplorerModes modes);
+    void setFeatures(ExplorerFeatures features);
     QList<QDockWidget *> docks();
 
 public slots:
-    void setCurrentConnection(QkConnection *conn);
+    void setConnection(QkConnection *conn);
 
 private slots:
     void slotReloadSerialPorts();
     void slotSetSerialPortName();
-    void slotStatus(QkCore::Status status);
+    void slotConnectionStatus(int id, QkConnection::Status status);
+    void slotCoreStatus(QkCore::Status status);
     void slotConnect();
     void slotSearch();
     void slotStart();
@@ -55,13 +64,13 @@ private slots:
     //void slotExplorerList_reload();
     void slotNodeFound(int address);
     void slotExplorerListRowChanged(int row);
-    void slotDataReceived(int address);
+    void slotDataReceived(int address, QkDevice::DataArray dataArray);
     void slotNodeUpdated(int address);
 
     void slotDock(int id);
 
     void slotLogger_append(int address, QkDevice::Event event);
-    void slotLogger_append(int address);
+//    void slotLogger_append(int address);
     void slotLogger_setEnabled(bool enabled);
 
     void slotDebug_log(int address, QString debugStr);
@@ -167,7 +176,9 @@ private:
 
     RTPlotDock *m_currentPlotDock;
 
-    int m_modeFlags;
+    ExplorerModes m_modes;
+    ExplorerFeatures m_features;
+
     bool m_debugPrintTime;
     bool m_debugPrintSource;
 

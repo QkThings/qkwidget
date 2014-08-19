@@ -66,7 +66,8 @@ QkExplorerWidget::QkExplorerWidget(QWidget *parent) :
     m_debugPrintTime = false;
     m_debugPrintSource = false;
 
-    m_modeFlags = 0;
+    m_modes = 0;
+    m_features = 0;
 
     m_selNode = 0;
     m_selBoardType = sbtUnknown;
@@ -99,6 +100,37 @@ QkExplorerWidget::~QkExplorerWidget()
     delete ui;
 }
 
+void QkExplorerWidget::setModes(ExplorerModes modes)
+{
+    m_modes = modes;
+    updateInterface();
+}
+
+void QkExplorerWidget::setFeatures(ExplorerFeatures features)
+{
+    m_features = features;
+    updateInterface();
+}
+
+void QkExplorerWidget::reset()
+{
+    m_conn = 0;
+    m_selNode = 0;
+    m_selBoardType = sbtUnknown;
+
+    ui->boardPanel->reset();
+    ui->explorerList->clear();
+
+    RTPlotDock::resetId();
+    slotViewer_removeAllPlots();
+    slotViewer_addPlot();
+
+    slotReloadSerialPorts();
+
+    setDashboardMessage(tr("Connection not available."),
+                        tr(""));
+}
+
 QList<QDockWidget*> QkExplorerWidget::docks()
 {
     QList<QDockWidget*> list;
@@ -125,35 +157,10 @@ void QkExplorerWidget::slotDock(int id)
         dw->widget->layout()->setMargin(margin);
         ui->explorerTabs->insertTab(id, dw->widget, dw->widget->windowTitle());
         ui->explorerTabs->setCurrentIndex(id);
+        raise();
     }
 
     dw->docked = !dw->docked;
-}
-
-void QkExplorerWidget::setModeFlags(int flags)
-{
-    m_modeFlags = flags;
-
-    updateInterface();
-}
-
-void QkExplorerWidget::reset()
-{
-    m_conn = 0;
-    m_selNode = 0;
-    m_selBoardType = sbtUnknown;
-
-    ui->boardPanel->reset();
-    ui->explorerList->clear();
-
-    RTPlotDock::resetId();
-    slotViewer_removeAllPlots();
-    slotViewer_addPlot();
-
-    slotReloadSerialPorts();
-
-    setDashboardMessage(tr("Connection not available."),
-                        tr("You need a connection so you can detect your devices."));
 }
 
 void QkExplorerWidget::setDashboardMessage(const QString &title, const QString &message)
@@ -177,6 +184,9 @@ void QkExplorerWidget::setupLayout()
     ui->tabLogger->setWindowTitle(tr("Logger"));
     ui->tabDebug->setWindowTitle(tr("Debug"));
 
+    ui->loggerSettings->hide();
+    ui->debugSettings->hide();
+
     QHeaderView *header;
     header = ui->eventTable->verticalHeader();
     header->show();
@@ -197,7 +207,7 @@ void QkExplorerWidget::setupLayout()
     layout->setMargin(0);
     layout->setSpacing(0);
 
-    setWindowTitle("qkexplorer");
+    setWindowTitle("QkExplorer");
     updateInterface();
 }
 
@@ -245,28 +255,25 @@ void QkExplorerWidget::setupConnections()
             this, SLOT(slotBoardTypeChanged()));
 
     connect(ui->logger_buttonSettings, SIGNAL(clicked(bool)), ui->loggerSettings, SLOT(setVisible(bool)));
-    connect(ui->loggerSettings->ui->buttonClear, SIGNAL(clicked()),
+    connect(ui->logger_buttonClear, SIGNAL(clicked()),
             ui->eventTable, SLOT(removeAll()));
-    connect(ui->loggerSettings->ui->buttonEnable, SIGNAL(clicked(bool)),
+    connect(ui->logger_buttonEnable, SIGNAL(clicked(bool)),
             this, SLOT(slotLogger_setEnabled(bool)));
-    connect(ui->loggerSettings->ui->buttonEnable, SIGNAL(clicked()),
-            this, SLOT(updateInterface()));
+
 
     connect(ui->debug_buttonSettings, SIGNAL(clicked(bool)), ui->debugSettings, SLOT(setVisible(bool)));
-    connect(ui->debugSettings->ui->buttonClear, SIGNAL(clicked()),
+    connect(ui->debug_buttonClear, SIGNAL(clicked()),
             ui->debugText, SLOT(clear()));
-    connect(ui->debugSettings->ui->buttonEnable, SIGNAL(clicked(bool)),
+    connect(ui->debug_buttonEnable, SIGNAL(clicked(bool)),
             this, SLOT(slotDebug_setEnabled(bool)));
-    connect(ui->debugSettings->ui->buttonEnable, SIGNAL(clicked()),
-            this, SLOT(updateInterface()));
-    connect(ui->debugSettings->ui->checkTimestamp, SIGNAL(clicked()),
+    connect(ui->debug_checkTimestamp, SIGNAL(clicked()),
             this, SLOT(slotDebug_updateOptions()));
-    connect(ui->debugSettings->ui->checkSource, SIGNAL(clicked()),
+    connect(ui->debug_checkSource, SIGNAL(clicked()),
             this, SLOT(slotDebug_updateOptions()));
 
-    connect(ui->viewer_checkGlobal, SIGNAL(clicked(bool)), ui->plotSettings, SLOT(setGlobal(bool)));
+//    connect(ui->viewer_checkGlobal, SIGNAL(clicked(bool)), ui->plotSettings, SLOT(setGlobal(bool)));
+//    connect(ui->viewer_buttonSettings, SIGNAL(clicked(bool)), ui->viewer_checkGlobal, SLOT(setVisible(bool)));
     connect(ui->viewer_buttonSettings, SIGNAL(clicked(bool)), ui->plotSettings, SLOT(setVisible(bool)));
-    connect(ui->viewer_buttonSettings, SIGNAL(clicked(bool)), ui->viewer_checkGlobal, SLOT(setVisible(bool)));
     connect(ui->viewer_buttonAddPlot, SIGNAL(clicked()),this, SLOT(slotViewer_addPlot()));
     connect(ui->viewer_buttonRemovePlot, SIGNAL(clicked()),this, SLOT(slotViewer_removePlot()));
     connect(ui->viewer_comboPlot, SIGNAL(currentIndexChanged(int)),this, SLOT(slotViewer_currentPlotChanged(int)));
@@ -281,7 +288,7 @@ void QkExplorerWidget::setupConnections()
             this, SLOT(slotViewer_removeWaveform()));
 }
 
-void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
+void QkExplorerWidget::setConnection(QkConnection *conn)
 {
     qDebug() << __FUNCTION__ << conn;
 
@@ -291,17 +298,22 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
     {
         qk = m_conn->qk();
         protocol = qk->protocol();
-        disconnect(qk, SIGNAL(status(QkCore::Status)), this, SLOT(slotStatus(QkCore::Status)));
+        disconnect(qk, SIGNAL(status(QkCore::Status)), this, SLOT(slotCoreStatus(QkCore::Status)));
         disconnect(protocol, SIGNAL(error(int,int)), this, SLOT(showError(int,int)));
 //        disconnect(protocol, SIGNAL(infoChanged(int,QkBoard::Type,int)), this, SLOT(slotNodeUpdated(int)));
         disconnect(protocol, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
         disconnect(protocol, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
-        disconnect(protocol, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
-        disconnect(protocol, SIGNAL(eventReceived(int)), this, SLOT(slotLogger_append(int)));
+        disconnect(protocol, SIGNAL(dataReceived(int, QkDevice::DataArray)),
+                this, SLOT(slotDataReceived(int, QkDevice::DataArray)));
+        disconnect(protocol, SIGNAL(eventReceived(int, QkDevice::Event)),
+                this, SLOT(slotLogger_append(int, QkDevice::Event)));
+//        disconnect(protocol, SIGNAL(eventReceived(int)), this, SLOT(slotLogger_append(int)));
         disconnect(protocol, SIGNAL(debugReceived(int,QString)), this, SLOT(slotDebug_log(int,QString)));
 
-        disconnect(m_conn, SIGNAL(connected(int)), this, SLOT(updateInterface()));
-        disconnect(m_conn, SIGNAL(disconnected(int)), this, SLOT(updateInterface()));
+        disconnect(m_conn, SIGNAL(status(int, QkConnection::Status)),
+                   this, SLOT(slotConnectionStatus(int, QkConnection::Status)));
+//        disconnect(m_conn, SIGNAL(connected(int)), this, SLOT(updateInterface()));
+//        disconnect(m_conn, SIGNAL(disconnected(int)), this, SLOT(updateInterface()));
     }
 
     m_conn = conn;
@@ -311,19 +323,23 @@ void QkExplorerWidget::setCurrentConnection(QkConnection *conn)
         qk = m_conn->qk();
         protocol = qk->protocol();
 
-        connect(qk, SIGNAL(status(QkCore::Status)), this, SLOT(slotStatus(QkCore::Status)));
+        connect(qk, SIGNAL(status(QkCore::Status)), this, SLOT(slotCoreStatus(QkCore::Status)));
         connect(protocol, SIGNAL(error(int,int)), this, SLOT(showError(int,int)));
         //    connect(protocol, SIGNAL(infoChanged(int,QkBoard::Type,int)), this, SLOT(slotNodeUpdated(int)));
         connect(protocol, SIGNAL(commFound(int)), this, SLOT(slotNodeFound(int)));
         connect(protocol, SIGNAL(commUpdated(int)), this, SLOT(slotNodeUpdated(int)));
         connect(protocol, SIGNAL(deviceFound(int)), this, SLOT(slotNodeFound(int)));
         connect(protocol, SIGNAL(deviceUpdated(int)), this, SLOT(slotNodeUpdated(int)));
-        connect(protocol, SIGNAL(dataReceived(int)), this, SLOT(slotDataReceived(int)));
-        connect(protocol, SIGNAL(eventReceived(int)), this, SLOT(slotLogger_append(int)));
+        connect(protocol, SIGNAL(dataReceived(int, QkDevice::DataArray)),
+                this, SLOT(slotDataReceived(int, QkDevice::DataArray)));
+        connect(protocol, SIGNAL(eventReceived(int, QkDevice::Event)),
+                this, SLOT(slotLogger_append(int, QkDevice::Event)));
         connect(protocol, SIGNAL(debugReceived(int,QString)), this, SLOT(slotDebug_log(int,QString)));
 
-        connect(m_conn, SIGNAL(connected(int)), this, SLOT(updateInterface()));
-        connect(m_conn, SIGNAL(disconnected(int)), this, SLOT(updateInterface()));
+        connect(m_conn, SIGNAL(status(int, QkConnection::Status)),
+                this, SLOT(slotConnectionStatus(int, QkConnection::Status)));
+//        connect(m_conn, SIGNAL(connected(int)), this, SLOT(updateInterface()));
+//        connect(m_conn, SIGNAL(disconnected(int)), this, SLOT(updateInterface()));
     }
     else
     {
@@ -365,19 +381,19 @@ void QkExplorerWidget::slotExplorerListRowChanged(int row)
 }
 
 
-void QkExplorerWidget::slotDataReceived(int address)
+void QkExplorerWidget::slotDataReceived(int address, QkDevice::DataArray dataArray)
 {
     if(m_selNode != 0 && m_selNode->address() == address)
     {
         ui->boardPanel->refreshData();
     }
 
-    QkNode *node = m_conn->qk()->node(address);
-    if(node == 0 || node->device() == 0)
-    {
-        qWarning() << __FUNCTION__ << "node == 0 || node->device() == 0";
-        return;
-    }
+//    QkNode *node = m_conn->qk()->node(address);
+//    if(node == 0 || node->device() == 0)
+//    {
+//        qWarning() << __FUNCTION__ << "node == 0 || node->device() == 0";
+//        return;
+//    }
 
     foreach(AddressDataPair *addrDataPair, m_waveformMapper.keys())
     {
@@ -385,7 +401,7 @@ void QkExplorerWidget::slotDataReceived(int address)
         {
             Waveform *wf = m_waveformMapper.value(addrDataPair);
             RTPlot *plot = m_plotMapper.value(wf);
-            QVector<QkDevice::Data> dataArray = m_conn->qk()->node(address)->device()->data();
+//            QVector<QkDevice::Data> dataArray = m_conn->qk()->node(address)->device()->data();
             QkDevice::Data data = dataArray[addrDataPair->dataIdx];
             plot->addData(wf, data.value(), data.timestamp());
         }
@@ -510,10 +526,35 @@ void QkExplorerWidget::slotSetSerialPortName()
     }
 }
 
-void QkExplorerWidget::slotStatus(QkCore::Status status)
+void QkExplorerWidget::slotConnectionStatus(int id, QkConnection::Status status)
 {
     switch(status)
     {
+    case QkConnection::sConnecting:
+        setDashboardMessage(tr("Connecting..."), "");
+        break;
+    case QkConnection::sConnected:
+        setDashboardMessage(tr("Connected."), "");
+        break;
+    case QkConnection::sDisconnected:
+        setDashboardMessage(tr("Connection not available."), "");
+        break;
+    default: ;
+    }
+
+    updateInterface();
+}
+
+void QkExplorerWidget::slotCoreStatus(QkCore::Status status)
+{
+    switch(status)
+    {
+    case QkCore::sWaitForReady:
+        setDashboardMessage(tr("Resetting.."), "");
+        break;
+    case QkCore::sReady:
+        setDashboardMessage(tr("Ready!"), "");
+        break;
     case QkCore::sSearching:
         setDashboardMessage(tr("Searching..."), "");
         break;
@@ -591,7 +632,7 @@ void QkExplorerWidget::slotClear()
 
 void QkExplorerWidget::slotDebug_log(int address, QString debugStr)
 {
-    if(!ui->debugSettings->ui->buttonEnable->isChecked())
+    if(!ui->debug_buttonEnable->isChecked())
         return;
 
     QString str;
@@ -605,21 +646,21 @@ void QkExplorerWidget::slotDebug_log(int address, QString debugStr)
 
 void QkExplorerWidget::slotDebug_updateOptions()
 {
-    m_debugPrintTime = ui->debugSettings->ui->checkTimestamp->isChecked();
-    m_debugPrintSource = ui->debugSettings->ui->checkSource->isChecked();
+    m_debugPrintTime = ui->debug_checkTimestamp->isChecked();
+    m_debugPrintSource = ui->debug_checkSource->isChecked();
 }
 
 void QkExplorerWidget::slotDebug_setEnabled(bool enabled)
 {
-//    if(enabled)
-//        ui->label_debugEnabled->setPixmap(QPixmap(":/icons/on_16.png"));
-//    else
-//        ui->label_debugEnabled->setPixmap(QPixmap(":/icons/off_16.png"));
+    if(enabled)
+        ui->debug_buttonEnable->setIcon(QIcon(":/icons/on_16.png"));
+    else
+        ui->debug_buttonEnable->setIcon(QIcon(":/icons/off_16.png"));
 }
 
 void QkExplorerWidget::slotLogger_append(int address, QkDevice::Event event)
 {
-    if(!ui->loggerSettings->ui->buttonEnable->isChecked())
+    if(!ui->logger_buttonEnable->isChecked())
         return;
 
     int r = ui->eventTable->addRow();
@@ -633,23 +674,23 @@ void QkExplorerWidget::slotLogger_append(int address, QkDevice::Event event)
     ui->eventTable->scrollToBottom();
 }
 
-void QkExplorerWidget::slotLogger_append(int address)
-{
-    if(!ui->loggerSettings->ui->buttonEnable->isChecked())
-        return;
+//void QkExplorerWidget::slotLogger_append(int address)
+//{
+//    if(!ui->logger_buttonEnable->isChecked())
+//        return;
 
-    QkCore *qk = m_conn->qk();
-    QQueue<QkDevice::Event> *events = qk->node(address)->device()->eventsFired();
-    while(events->count() > 0)
-        slotLogger_append(address, events->dequeue());
-}
+//    QkCore *qk = m_conn->qk();
+//    QkDevice::EventLog *events = qk->node(address)->device()->eventsFired();
+//    while(events->count() > 0)
+//        slotLogger_append(address, events->dequeue());
+//}
 
 void QkExplorerWidget::slotLogger_setEnabled(bool enabled)
 {
-//    if(enabled)
-//        ui->label_loggerEnabled->setPixmap(QPixmap(":/icons/on_16.png"));
-//    else
-//        ui->label_loggerEnabled->setPixmap(QPixmap(":/icons/off_16.png"));
+    if(enabled)
+        ui->logger_buttonEnable->setIcon(QIcon(":/icons/on_16.png"));
+    else
+        ui->logger_buttonEnable->setIcon(QIcon(":/icons/off_16.png"));
 }
 
 void QkExplorerWidget::slotViewer_addPlot()
@@ -826,13 +867,20 @@ void QkExplorerWidget::updateInterface()
     bool removePlotEnabled = (ui->viewer_comboPlot->count() > 1);
     ui->viewer_buttonRemovePlot->setEnabled(removePlotEnabled);
 
-    bool modeSingleConnection = ((m_modeFlags & mfSingleConnection) ? true : false);
+    bool modeSingleConnection = ((m_modes & ModeSingleConnection) ? true : false);
+    bool modeSingleNode = ((m_modes & ModeSingleNode) ? true : false);
+
     ui->buttonReloadSerialPorts->setVisible(modeSingleConnection);
     ui->comboPort->setVisible(modeSingleConnection);
     ui->buttonConnect->setVisible(modeSingleConnection);
-
-    bool modeSingleNode = ((m_modeFlags & mfSingleNode) ? true : false);
     ui->plotSettings->ui->comboNode->setVisible(!modeSingleNode);
+
+
+    bool featureDockableWidgets = (m_features & FeatureDockableWidgets ? true : false);
+    ui->dashboard_buttonDock->setVisible(featureDockableWidgets);
+    ui->viewer_buttonDock->setVisible(featureDockableWidgets);
+    ui->logger_buttonDock->setVisible(featureDockableWidgets);
+    ui->debug_buttonDock->setVisible(featureDockableWidgets);
 
     if(modeSingleNode)
     {
@@ -860,18 +908,14 @@ void QkExplorerWidget::updateInterface()
         ui->buttonConnect->setText(tr("Connect"));
         ui->comboPort->setDisabled(false);
         ui->buttonReloadSerialPorts->setDisabled(false);
+        ui->stackedWidget->setCurrentIndex(spiHome);
     }
 
-    if(m_conn != 0)
-    {
-
-    }
-    else
+    if(m_conn == 0)
     {
         ui->stackedWidget->setCurrentIndex(spiHome);
         ui->boardPanel->setBoard(0, QkBoard::btDevice, m_conn);
     }
-
 }
 
 void QkExplorerWidget::showError(int code, int arg)

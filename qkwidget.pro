@@ -12,7 +12,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport
 TARGET = qkwidget
 TEMPLATE = lib
 
-#DEFINES += QT_NO_DEBUG_OUTPUT
+DEFINES += QT_NO_DEBUG_OUTPUT
 
 DEFINES += QKWIDGET_LIBRARY
 
@@ -22,10 +22,6 @@ INCLUDEPATH += ../utils
 INCLUDEPATH += ../qkcore
 LIBS += -lqkcore
 QMAKE_LIBDIR += ../qkcore/release
-
-#INCLUDEPATH += ../qkconnect
-#LIBS += -lqkconnect
-#QMAKE_LIBDIR += ../qkconnect/release
 
 SOURCES += qkexplorerwidget.cpp \
     private/rtplot.cpp \
