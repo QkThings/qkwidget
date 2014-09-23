@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef CPROPERTYBROWSER_H
+#define CPROPERTYBROWSER_H
+
 #include "cproperty.h"
 #include <QList>
 #include <QTreeWidget>

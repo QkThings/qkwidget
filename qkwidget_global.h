@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef QKWIDGET_GLOBAL_H
+#define QKWIDGET_GLOBAL_H
+
 #include <QtCore/qglobal.h>
 
 #if defined(QKWIDGET_LIBRARY)

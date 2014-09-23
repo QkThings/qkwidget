@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ptreewidgetitem.h"
+
 pTreeWidgetItem::pTreeWidgetItem(QTreeWidget *parent) :
     QTreeWidgetItem(parent)
 {

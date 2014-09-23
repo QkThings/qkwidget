@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "ptreeitemproperty.h"
 #include "cproperty.h"
 
 pTreeItemProperty::pTreeItemProperty(CProperty *property, pTreeItemProperty *parent) :

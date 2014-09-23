@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "eventwidget.h"
 #include "ui_eventwidget.h"
 #include "gui_globals.h"
 #include <QTime>

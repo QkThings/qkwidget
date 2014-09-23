@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef PTOOLBUTTON_H
+#define PTOOLBUTTON_H
+
 #include <QToolButton>
 
 class pToolButton : public QToolButton

@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef PTABLEWIDGET_H
+#define PTABLEWIDGET_H
+
 #include <QTableWidget>
 
 class QMenu;

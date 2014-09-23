@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "rtplot.h"
 #include <QDebug>
 
 int Waveform::m_nextID = 0;

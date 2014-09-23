@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef DEBUGSETTINGSWIDGET_H
+#define DEBUGSETTINGSWIDGET_H
+
 #include <QWidget>
 
 namespace Ui {

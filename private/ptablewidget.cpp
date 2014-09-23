@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ptablewidget.h"
 #include "ptoolbutton.h"
 
 #include <QHeaderView>

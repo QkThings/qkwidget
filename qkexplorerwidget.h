@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef QKEXPLORERWIDGET_H
+#define QKEXPLORERWIDGET_H
+
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QSignalMapper>

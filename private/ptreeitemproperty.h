@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef PTREEITEMPROPERTY_H
+#define PTREEITEMPROPERTY_H
+
 #include <QTreeWidgetItem>
 
 class CProperty;

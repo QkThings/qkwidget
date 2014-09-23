@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef GUI_GLOBALS_H
+#define GUI_GLOBALS_H
+
 #include <QtGlobal>
 #include <QFont>
 

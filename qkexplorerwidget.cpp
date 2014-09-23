@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "qkexplorerwidget.h"
 #include "ui_qkexplorerwidget.h"
 
 #include "gui_globals.h"
@@ -141,6 +143,8 @@ void QkExplorerWidget::reset()
     RTPlotDock::resetId();
     slotViewer_removeAllPlots();
     slotViewer_addPlot();
+    PlotSettings *plotSettings = ui->plotSettings;
+    plotSettings->ui->comboNode->clear();
 
     slotReloadSerialPorts();
 
@@ -357,11 +361,24 @@ void QkExplorerWidget::setConnection(QkConnection *conn)
                 this, SLOT(slotConnectionStatus(int, QkConnection::Status)));
 //        connect(m_conn, SIGNAL(connected(int)), this, SLOT(updateInterface()));
 //        connect(m_conn, SIGNAL(disconnected(int)), this, SLOT(updateInterface()));
+
+        m_selNode = 0;
+        m_selBoardType = sbtUnknown;
+
+        ui->boardPanel->reset();
+        ui->explorerList->clear();
+
+        RTPlotDock::resetId();
+        slotViewer_removeAllPlots();
+        slotViewer_addPlot();
+        PlotSettings *plotSettings = ui->plotSettings;
+        plotSettings->ui->comboNode->clear();
+
+        foreach(int addr, m_conn->qk()->nodes().keys())
+            slotNodeFound(addr);
     }
     else
-    {
         reset();
-    }
 
     updateInterface();
 }
@@ -450,7 +467,10 @@ void QkExplorerWidget::slotNodeUpdated(int address)
     if(m_selBoardType == sbtCommDevice)
     {
         if(m_selNode != 0 && m_selNode->address() == address)
-            slotBoardPanels_reload();
+        {
+            ui->boardPanel->reload();
+            ui->boardPanel->refresh();
+        }
 
         slotViewer_nodeChanged(address);
     }
@@ -473,28 +493,28 @@ void QkExplorerWidget::slotBoardTypeChanged()
 
 void QkExplorerWidget::slotBoardPanels_reload()
 {    
-    if(ui->explorerList->currentRow() < 0)
-        return;
+//    if(ui->explorerList->currentRow() < 0)
+//        return;
 
-    if(m_selBoardType == sbtCommDevice)
-    {
-        if(m_selNode == 0)
-            return;
+//    if(m_selBoardType == sbtCommDevice)
+//    {
+//        if(m_selNode == 0)
+//            return;
 
-        if(m_selNode->comm() != 0)
-        {
-            ui->boardPanel->setBoard(m_selNode->comm(), QkBoard::btComm, m_conn);
-            ui->boardPanel->reload();
-            ui->boardPanel->refresh();
-        }
+//        if(m_selNode->comm() != 0)
+//        {
+//            ui->boardPanel->setBoard(m_selNode->comm(), QkBoard::btComm, m_conn);
+//            ui->boardPanel->reload();
+//            ui->boardPanel->refresh();
+//        }
 
-        if(m_selNode->device() != 0)
-        {
-            ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
-            ui->boardPanel->reload();
-            ui->boardPanel->refresh();
-        }
-    }
+//        if(m_selNode->device() != 0)
+//        {
+//            ui->boardPanel->setBoard(m_selNode->device(), QkBoard::btDevice, m_conn);
+//            ui->boardPanel->reload();
+//            ui->boardPanel->refresh();
+//        }
+//    }
 }
 
 
@@ -890,6 +910,7 @@ void QkExplorerWidget::updateInterface()
     ui->buttonReloadSerialPorts->setVisible(modeSingleConnection);
     ui->comboPort->setVisible(modeSingleConnection);
     ui->buttonConnect->setVisible(modeSingleConnection);
+    ui->labelConn->setVisible(!modeSingleConnection);
     ui->plotSettings->ui->comboNode->setVisible(!modeSingleNode);
 
 
@@ -898,6 +919,33 @@ void QkExplorerWidget::updateInterface()
     ui->viewer_buttonDock->setVisible(featureDockableWidgets);
     ui->logger_buttonDock->setVisible(featureDockableWidgets);
     ui->debug_buttonDock->setVisible(featureDockableWidgets);
+
+    if(!modeSingleConnection)
+    {
+        QString connLabel = "Connection ";
+        connLabel += "[";
+        if(m_conn != 0)
+            connLabel += "" + QString::number(m_conn->id()).rightJustified(2, ' ');
+        else
+            connLabel += "none";
+        connLabel += "]";
+        if(m_conn != 0)
+        {
+            connLabel += " " + QkConnection::typeToString(m_conn->descriptor().type);
+            switch(m_conn->descriptor().type)
+            {
+            case QkConnection::tSerial:
+                connLabel += " " + m_conn->descriptor().parameters.value("portName").toString();
+                connLabel += " " + m_conn->descriptor().parameters.value("baudRate").toString();
+                break;
+            default: ;
+            }
+        }
+
+
+        ui->labelConn->setText(connLabel);
+    }
+
 
     if(modeSingleNode)
     {

@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef EVENTWIDGET_H
+#define EVENTWIDGET_H
+
 #include <QWidget>
 #include <qkcore.h>
 
