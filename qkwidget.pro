@@ -7,7 +7,7 @@
 QT       += widgets
 QT       -= gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport
+greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport serialport
 
 TARGET = qkwidget
 TEMPLATE = lib
